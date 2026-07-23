@@ -1,0 +1,16 @@
+#!/bin/sh
+# Pre-commit hook: block commits containing hardcoded secrets
+# Optimised: single combined grep over full staged diff (avoids per-file subprocess storm on Windows)
+
+COMBINED_PATTERN='ghp_[A-Za-z0-9_]{36}|github_pat_[A-Za-z0-9_]{82}|ATATT[A-Za-z0-9_=-]{50,}|sk-[A-Za-z0-9]{48}|xoxb-[0-9A-Za-z-]{50,}|AIza[0-9A-Za-z_-]{35}|BEGIN (RSA|EC|OPENSSH) PRIVATE KEY'
+
+MATCHES=$(git diff --cached | grep "^+" | grep -v "^+++" | grep -E "$COMBINED_PATTERN" 2>/dev/null)
+
+if [ -n "$MATCHES" ]; then
+  printf '\033[0;31m[SECRET DETECTED]\033[0m Possible hardcoded secret found in staged changes.\n'
+  printf 'Remove the secret and store it in .env (gitignored) instead.\n\n'
+  printf 'Matched line(s):\n%s\n\n' "$MATCHES"
+  exit 1
+fi
+
+exit 0

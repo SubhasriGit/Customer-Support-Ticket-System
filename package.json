@@ -1,0 +1,21 @@
+{
+  "name": "customer-support-ticket-system",
+  "version": "1.0.0",
+  "description": "AI-Enhanced Customer Support Ticket System — mm-learning-group-1 Capstone",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "test": "cd tests && npx playwright test",
+    "workflow": "node workflow/orchestrator.js",
+    "workflow:analysis": "node workflow/orchestrator.js analysis",
+    "workflow:plan": "node workflow/orchestrator.js plan",
+    "workflow:design": "node workflow/orchestrator.js design",
+    "workflow:dev": "node workflow/orchestrator.js development",
+    "setup:hooks": "node scripts/setup-hooks.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
