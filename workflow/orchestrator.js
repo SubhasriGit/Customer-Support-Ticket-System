@@ -4,7 +4,7 @@ const { postPhaseHook } = require('./hooks/post-phase');
 const { onFailureHook } = require('./hooks/on-failure');
 const { waitForPRApproval, addPRComment } = require('./hitl/reviewer');
 
-const PHASES = ['analysis', 'plan', 'design', 'development', 'qa', 'documentation', 'build'];
+const PHASES = ['requirement_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
 
 /**
  * Central Orchestrator — manages agent selection, HITL routing,
@@ -103,13 +103,12 @@ class Orchestrator {
 
   selectAgent(phaseName) {
     const agents = {
-      analysis:      require('./phases/analysis'),
-      plan:          require('./phases/plan'),
-      design:        require('./phases/design'),
-      development:   require('./phases/development'),
-      qa:            require('./phases/qa'),
-      documentation: require('./phases/documentation'),
-      build:         require('./phases/build'),
+      requirement_analysis: require('./phases/requirement_analysis'),
+      design:               require('./phases/design'),
+      development:          require('./phases/development'),
+      testing:              require('./phases/testing'),
+      deployment:           require('./phases/deployment'),
+      maintenance:          require('./phases/maintenance'),
     };
 
     if (!agents[phaseName]) throw new Error(`No agent registered for phase: ${phaseName}`);
