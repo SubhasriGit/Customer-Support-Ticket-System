@@ -42,7 +42,7 @@ export default function TicketList({ tickets, onStatusToggle }) {
         const isOpen = ticket.status === 'open';
 
         return (
-          <div key={ticket.id} data-testid={`ticket-${ticket.id}`} style={styles.card}>
+          <div key={ticket.id} data-testid={`ticket-card-${ticket.id}`} style={styles.card}>
             <div style={styles.header}>
               <span data-testid={`ticket-title-${ticket.id}`} style={styles.title}>{ticket.title}</span>
               <div style={styles.badgeRow}>

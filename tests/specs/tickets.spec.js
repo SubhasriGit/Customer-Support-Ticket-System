@@ -47,7 +47,7 @@ test.describe('Ticket Status', () => {
     await (await resilientLocator(page, '[data-testid="ticket-description"]', 'description')).fill('Testing status toggle.');
     await (await resilientLocator(page, '[data-testid="ticket-submit"]', 'submit')).click();
 
-    const tickets = page.locator('[data-testid^="ticket-"]').filter({ hasText: 'Status test ticket' });
+    const tickets = page.locator('[data-testid^="ticket-card-"]').filter({ hasText: 'Status test ticket' });
     await expect(tickets.first()).toBeVisible();
 
     const toggleBtn = tickets.first().locator('[data-testid^="toggle-status-"]');
