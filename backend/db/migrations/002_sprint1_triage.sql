@@ -1,0 +1,2 @@
+ALTER TABLE tickets ADD COLUMN category TEXT DEFAULT NULL;
+ALTER TABLE tickets ADD COLUMN priority TEXT DEFAULT 'medium';
