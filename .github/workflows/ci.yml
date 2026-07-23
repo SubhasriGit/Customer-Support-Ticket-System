@@ -1,0 +1,86 @@
+name: CSTS CI/CD
+
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: cd backend && npm install
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm install --legacy-peer-deps
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Verify build output
+        run: |
+          test -f frontend/build/index.html && echo "✅ Frontend build OK"
+          test -f backend/server.js && echo "✅ Backend entry OK"
+
+      - name: Start backend
+        run: cd backend && npm start &
+        env:
+          PORT: 3001
+          NODE_ENV: test
+
+      - name: Start frontend (serve build)
+        run: |
+          npm install -g serve
+          serve -s frontend/build -l 3000 &
+
+      - name: Wait for servers
+        run: |
+          npx wait-on http://localhost:3001/health http://localhost:3000 --timeout 30000
+
+      - name: Install Playwright
+        run: cd tests && npm install && npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: cd tests && npx playwright test
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/playwright-report/
+          retention-days: 14
+
+      - name: Package artifact
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p dist/public dist/server
+          cp -r frontend/build/. dist/public/
+          rsync -av --exclude='node_modules' --exclude='.env' --exclude='*.sqlite' backend/ dist/server/
+          cd dist/server && npm install --production && cd ../..
+          echo "✅ Artifact packaged at ./dist/"
+
+      - name: Upload build artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: csts-artifact
+          path: dist/
+          retention-days: 30
