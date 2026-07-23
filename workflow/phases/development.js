@@ -62,3 +62,7 @@ async function run({ feedback } = {}) {
 }
 
 module.exports = { run };
+
+if (require.main === module) {
+  run().catch(err => { console.error('[development] Failed:', err.message); process.exit(1); });
+}
