@@ -4,7 +4,7 @@ const { postPhaseHook } = require('./hooks/post-phase');
 const { onFailureHook } = require('./hooks/on-failure');
 const { waitForPRApproval, addPRComment } = require('./hitl/reviewer');
 
-const PHASES = ['analysis', 'plan', 'design', 'development', 'documentation', 'build'];
+const PHASES = ['analysis', 'plan', 'design', 'development', 'qa', 'documentation', 'build'];
 
 /**
  * Central Orchestrator — manages agent selection, HITL routing,
@@ -107,6 +107,7 @@ class Orchestrator {
       plan:          require('./phases/plan'),
       design:        require('./phases/design'),
       development:   require('./phases/development'),
+      qa:            require('./phases/qa'),
       documentation: require('./phases/documentation'),
       build:         require('./phases/build'),
     };
