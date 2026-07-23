@@ -1,0 +1,76 @@
+CUSTOMER SUPPORT TICKET SYSTEM — BUSINESS REQUIREMENTS
+=======================================================
+Project  : AI-Enhanced Customer Support Ticket System
+Version  : 1.0
+Author   : Business Analyst (CodeMie BA Agent)
+Purpose  : Defines the functional requirements for enhancing the base
+           Customer Support Ticket System with AI-driven capabilities.
+           This file is read by the Requirement Analysis phase agent
+           (workflow/phases/analysis.js) to create JIRA epics, stories,
+           and subtasks automatically.
+=======================================================
+
+
+EPIC: AI-Enhanced Customer Support System
+Description: The base Customer Support Ticket System allows agents to
+  submit, view, and close tickets. This epic covers all AI-driven
+  enhancements needed to bring the system to enterprise grade — including
+  automatic triage, SLA enforcement, analytics reporting, and intelligent
+  response suggestions.
+
+
+  STORY: AI-Powered Ticket Triage and Categorisation
+  Description: As a support agent, I want every incoming ticket to be
+    automatically classified into a category (Technical, Billing, General)
+    and assigned a priority (High, Medium, Low) so that urgent issues are
+    never missed and the team can manage their queue efficiently without
+    manually reading each ticket on arrival.
+    TASK: Integrate Claude AI API to classify ticket category and priority
+    TASK: Add category and priority columns to the tickets database table
+    TASK: Display category and priority badges on the ticket list UI
+    TASK: Implement keyword-based fallback triage when AI is unavailable
+
+
+  STORY: Priority Scoring and Severity Levels
+  Description: As a support manager, I want tickets to carry a severity
+    score so that high-impact issues are surfaced immediately and the team
+    can respond according to business urgency rather than arrival order.
+    TASK: Define scoring rules — High (urgent/critical/blocked keywords), Medium (default), Low (minor/no-rush)
+    TASK: Expose priority field in the POST /api/tickets endpoint
+    TASK: Show colour-coded priority badge (red/yellow/green) in ticket cards
+
+
+  STORY: SLA Tracking and Breach Alerts
+  Description: As a support manager, I want each ticket to have an SLA
+    deadline based on its priority so that the team is aware of response
+    commitments and customers are never left waiting beyond agreed times.
+    SLA targets: High = 4 hours, Medium = 8 hours, Low = 24 hours.
+    TASK: Calculate sla_due_at timestamp on ticket creation based on priority
+    TASK: Display a live SLA countdown timer on each open ticket card
+    TASK: Mark ticket as sla_breached when deadline passes and show a red alert badge
+    TASK: Include SLA breach count in the analytics dashboard
+
+
+  STORY: Analytics Dashboard
+  Description: As a support manager, I want a real-time analytics dashboard
+    so that I can monitor team performance, spot bottlenecks, and make
+    data-driven decisions about staffing and process improvements.
+    The dashboard should show ticket volumes, resolution times, SLA health,
+    and breakdown by category and priority.
+    TASK: Build GET /api/analytics endpoint returning KPIs and time-series data
+    TASK: Add Dashboard tab to the frontend navigation
+    TASK: Display KPI cards — total tickets, open, closed, SLA breaches
+    TASK: Render bar charts for ticket volume by category and by priority
+    TASK: Show daily ticket volume for the last 7 days
+
+
+  STORY: Auto-Response Suggestions
+  Description: As a support agent, I want the system to suggest a draft
+    reply for each ticket using AI so that I can respond faster and more
+    consistently without starting every response from scratch. I should be
+    able to edit the suggestion before accepting or discard it entirely.
+    TASK: Build GET /api/tickets/:id/suggest-reply using Claude AI API
+    TASK: Implement category-based template fallback when AI is unavailable
+    TASK: Add a Suggest Reply button to each open ticket card in the UI
+    TASK: Create editable response panel with Accept and Discard actions
+    TASK: Save accepted responses to the responses table via PATCH /api/tickets/:id/response
