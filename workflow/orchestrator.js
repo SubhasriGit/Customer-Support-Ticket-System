@@ -5,7 +5,7 @@ const { onFailureHook }       = require('./hooks/on-failure');
 const { waitForPRApproval, addPRComment } = require('./hitl/reviewer');
 const { promptRejectionAction }           = require('./hitl/prompt');
 
-const PHASES = ['requirement_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
+const PHASES = ['requirement_analysis', 'app_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
 
 // Max times a human can request changes before being asked what to do next
 const MAX_HITL_RETRIES = 3;
@@ -180,6 +180,7 @@ class Orchestrator {
   selectAgent(phaseName) {
     const agents = {
       requirement_analysis: require('./phases/requirement_analysis'),
+      app_analysis:         require('./phases/app_analysis'),
       design:               require('./phases/design'),
       development:          require('./phases/development'),
       testing:              require('./phases/testing'),

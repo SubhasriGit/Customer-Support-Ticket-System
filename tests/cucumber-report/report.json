@@ -1,0 +1,302 @@
+[
+  {
+    "description": "  As a support team member\n  I want to manage customer support tickets\n  So that I can resolve customer issues efficiently",
+    "elements": [
+      {
+        "description": "",
+        "id": "customer-support-ticket-management;submit-a-new-support-ticket",
+        "keyword": "Scenario",
+        "line": 9,
+        "name": "Submit a new support ticket",
+        "steps": [
+          {
+            "result": {
+              "status": "passed",
+              "duration": 305102400
+            },
+            "keyword": "Before",
+            "hidden": true
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 34722199
+            },
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "I am on the support portal",
+            "match": {
+              "location": "steps\\tickets.steps.js:25"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 101540299
+            },
+            "arguments": [],
+            "keyword": "When ",
+            "line": 10,
+            "name": "I fill in the ticket title with \"Login page broken\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:29"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 12210299
+            },
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "I fill in the ticket email with \"user@example.com\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:33"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 11149099
+            },
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "I fill in the ticket description with \"Cannot log in after password reset.\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:37"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 39619200
+            },
+            "arguments": [],
+            "keyword": "And ",
+            "line": 13,
+            "name": "I submit the ticket",
+            "match": {
+              "location": "steps\\tickets.steps.js:41"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 12921299
+            },
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "I should see \"Login page broken\" in the ticket list",
+            "match": {
+              "location": "steps\\tickets.steps.js:55"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 58403900
+            },
+            "keyword": "After",
+            "hidden": true
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "customer-support-ticket-management;toggle-ticket-status-from-open-to-closed",
+        "keyword": "Scenario",
+        "line": 16,
+        "name": "Toggle ticket status from open to closed",
+        "steps": [
+          {
+            "result": {
+              "status": "passed",
+              "duration": 249337000
+            },
+            "keyword": "Before",
+            "hidden": true
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 32743400
+            },
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "I am on the support portal",
+            "match": {
+              "location": "steps\\tickets.steps.js:25"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 101259800
+            },
+            "arguments": [],
+            "keyword": "When ",
+            "line": 17,
+            "name": "I fill in the ticket title with \"Status test ticket\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:29"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 13380699
+            },
+            "arguments": [],
+            "keyword": "And ",
+            "line": 18,
+            "name": "I fill in the ticket email with \"qa@example.com\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:33"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 10641599
+            },
+            "arguments": [],
+            "keyword": "And ",
+            "line": 19,
+            "name": "I fill in the ticket description with \"Testing status toggle.\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:37"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 52998599
+            },
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "I submit the ticket",
+            "match": {
+              "location": "steps\\tickets.steps.js:41"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 39124199
+            },
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "I close the ticket \"Status test ticket\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:45"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 30042600
+            },
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "the ticket \"Status test ticket\" should show status \"closed\"",
+            "match": {
+              "location": "steps\\tickets.steps.js:60"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 52794600
+            },
+            "keyword": "After",
+            "hidden": true
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "customer-support-ticket-management;filter-tickets-by-closed-status",
+        "keyword": "Scenario",
+        "line": 24,
+        "name": "Filter tickets by closed status",
+        "steps": [
+          {
+            "result": {
+              "status": "passed",
+              "duration": 256842999
+            },
+            "keyword": "Before",
+            "hidden": true
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 36165399
+            },
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "I am on the support portal",
+            "match": {
+              "location": "steps\\tickets.steps.js:25"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 147988800
+            },
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "I filter tickets by \"closed\" status",
+            "match": {
+              "location": "steps\\tickets.steps.js:51"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 3809400
+            },
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "I should see no open tickets",
+            "match": {
+              "location": "steps\\tickets.steps.js:65"
+            }
+          },
+          {
+            "result": {
+              "status": "passed",
+              "duration": 53221300
+            },
+            "keyword": "After",
+            "hidden": true
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "customer-support-ticket-management",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Customer Support Ticket Management",
+    "tags": [],
+    "uri": "features\\tickets.feature"
+  }
+]
