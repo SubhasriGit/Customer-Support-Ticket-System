@@ -94,12 +94,18 @@ async function run({ feedback } = {}) {
     serverFiles: countFiles(serverDir),
   };
 
+  const localUrl   = 'http://localhost:3000';
+  const renderUrl  = process.env.RENDER_URL;
+
   console.log(`\n[build] ─────────────────────────────────────────`);
   console.log(`[build] ARTIFACT READY`);
-  console.log(`[build]   Location : ${distDir}`);
-  console.log(`[build]   Frontend : ${stats.publicFiles} files in dist/public/`);
-  console.log(`[build]   Backend  : ${stats.serverFiles} files in dist/server/`);
-  console.log(`[build]   Start    : NODE_ENV=production node dist/server/server.js`);
+  console.log(`[build]   Location   : ${distDir}`);
+  console.log(`[build]   Frontend   : ${stats.publicFiles} files in dist/public/`);
+  console.log(`[build]   Backend    : ${stats.serverFiles} files in dist/server/`);
+  console.log(`[build]   Start      : NODE_ENV=production node dist/server/server.js`);
+  console.log(`[build]   Local URL  : ${localUrl}`);
+  if (renderUrl) console.log(`[build]   Production : ${renderUrl}`);
+  else           console.log(`[build]   Production : (set RENDER_URL in .env after deploying to Render.com)`);
   console.log(`[build] ─────────────────────────────────────────`);
   console.log('[build] HITL REVIEW REQUIRED — Verify artifact runs, then approve to complete the pipeline.');
 
