@@ -67,6 +67,13 @@ function confRequest(method, path, body) {
   });
 }
 
+async function findConfluencePage(title) {
+  const encoded = encodeURIComponent(title);
+  const res = await confRequest('GET', `/wiki/rest/api/content?title=${encoded}&spaceKey=${CONF_SPACE}&expand=version`);
+  if (res.results?.length > 0) return res.results[0];
+  return null;
+}
+
 async function run({ feedback } = {}) {
   console.log('[maintenance] Maintenance Phase Agent starting...');
   if (feedback) console.log(`[maintenance] Incorporating feedback: ${feedback}`);
@@ -103,16 +110,8 @@ async function run({ feedback } = {}) {
 
   // ── 2. Publish Maintenance Checklist to Confluence ─────────────────────────
   console.log('\n[maintenance] Step 2/3 — Publishing maintenance checklist to Confluence...');
-  let confPageId = null;
-  try {
-    const page = await confRequest('POST', '/wiki/rest/api/content', {
-      type: 'page',
-      title: 'Maintenance & Operations Runbook',
-      space: { key: CONF_SPACE },
-      body: {
-        storage: {
-          representation: 'storage',
-          value: `
+  const RUNBOOK_TITLE = 'Maintenance & Operations Runbook';
+  const RUNBOOK_CONTENT = `
 <h2>Maintenance Runbook — Customer Support Ticket System</h2>
 <h3>Health Check</h3>
 <p>Endpoint: <code>GET /health</code> → <code>{"status":"ok"}</code></p>
@@ -135,12 +134,28 @@ async function run({ feedback } = {}) {
   <li>Collect user feedback from support tickets</li>
   <li>Review analytics for high-volume categories</li>
   <li>Prioritize backlog for next sprint in JIRA</li>
-</ul>`,
-        },
-      },
-    });
+</ul>`;
+
+  let confPageId = null;
+  try {
+    const existing = await findConfluencePage(RUNBOOK_TITLE);
+    let page;
+    if (existing) {
+      page = await confRequest('PUT', `/wiki/rest/api/content/${existing.id}`, {
+        type: 'page', title: RUNBOOK_TITLE,
+        version: { number: existing.version.number + 1 },
+        body: { storage: { representation: 'storage', value: RUNBOOK_CONTENT } },
+      });
+      console.log(`[maintenance] ✅ Confluence page updated: ID ${page.id}`);
+    } else {
+      page = await confRequest('POST', '/wiki/rest/api/content', {
+        type: 'page', title: RUNBOOK_TITLE,
+        space: { key: CONF_SPACE },
+        body: { storage: { representation: 'storage', value: RUNBOOK_CONTENT } },
+      });
+      console.log(`[maintenance] ✅ Confluence page created: ID ${page.id}`);
+    }
     confPageId = page.id;
-    console.log(`[maintenance] ✅ Confluence page created: ID ${confPageId}`);
   } catch (err) {
     console.warn(`[maintenance] ⚠️  Confluence page skipped: ${err.message}`);
   }
@@ -158,15 +173,21 @@ async function run({ feedback } = {}) {
     healthStatus = 'unreachable';
   }
 
+  const localUrl  = 'http://localhost:3000';
+  const renderUrl = process.env.RENDER_URL;
+
   console.log('\n[maintenance] ─────────────────────────────────────────');
   console.log('[maintenance] MAINTENANCE PHASE COMPLETE');
   if (jiraKey)    console.log(`[maintenance]   JIRA story    : ${jiraKey}`);
   if (confPageId) console.log(`[maintenance]   Confluence    : Page ID ${confPageId}`);
   console.log(`[maintenance]   Health status : ${healthStatus}`);
+  console.log(`[maintenance]   Local URL     : ${localUrl}`);
+  if (renderUrl)  console.log(`[maintenance]   Production    : ${renderUrl}`);
+  else            console.log(`[maintenance]   Production    : (deploy to Render.com and set RENDER_URL in .env)`);
   console.log('[maintenance] Pipeline fully complete. System is live and monitored.');
   console.log('[maintenance] ─────────────────────────────────────────');
 
-  return { jiraKey, confPageId, healthStatus };
+  return { jiraKey, confPageId, healthStatus, localUrl, renderUrl };
 }
 
 module.exports = { run };

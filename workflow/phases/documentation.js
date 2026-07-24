@@ -43,7 +43,34 @@ function confluenceRequest(method, path, body = null) {
   });
 }
 
+async function findPage(title) {
+  const encoded = encodeURIComponent(title);
+  const res = await confluenceRequest('GET', `/rest/api/content?title=${encoded}&spaceKey=${CONF_SPACE}&expand=version`);
+  if (res.status === 200 && res.body.results?.length > 0) return res.body.results[0];
+  return null;
+}
+
 async function createConfluencePage(title, content, parentId = null) {
+  const existing = await findPage(title);
+
+  if (existing) {
+    const nextVersion = existing.version.number + 1;
+    const updateBody = {
+      type: 'page',
+      title,
+      version: { number: nextVersion },
+      body: { storage: { value: content, representation: 'storage' } },
+      ...(parentId ? { ancestors: [{ id: parentId }] } : {}),
+    };
+    const res = await confluenceRequest('PUT', `/rest/api/content/${existing.id}`, updateBody);
+    if (res.status !== 200) {
+      throw new Error(`Confluence page update failed (${res.status}): ${JSON.stringify(res.body)}`);
+    }
+    const link = CONF_BASE + res.body._links?.webui;
+    console.log(`[documentation] Updated: "${title}" → ${link}`);
+    return res.body;
+  }
+
   const body = {
     type: 'page',
     title,
