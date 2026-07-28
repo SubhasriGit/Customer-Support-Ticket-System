@@ -2,8 +2,11 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const fs   = require('fs');
 const path = require('path');
 
-const JIRA_BASE    = process.env.JIRA_BASE_URL          || 'https://subhasree.atlassian.net';
-const CONF_BASE    = process.env.CONFLUENCE_BASE_URL     || 'https://subhasree.atlassian.net/wiki';
+const JIRA_BASE    = process.env.JIRA_BASE_URL;
+const CONF_BASE    = process.env.CONFLUENCE_BASE_URL;
+
+if (!JIRA_BASE)  console.warn('[run-details] JIRA_BASE_URL not set — JIRA links will be omitted from RunDetails.md');
+if (!CONF_BASE)  console.warn('[run-details] CONFLUENCE_BASE_URL not set — Confluence links will be omitted from RunDetails.md');
 const GH_OWNER     = process.env.GITHUB_OWNER;
 const GH_REPO      = process.env.GITHUB_REPO;
 
@@ -65,6 +68,7 @@ function extractLinks(phaseName, output = {}) {
     }
 
     case 'deployment':
+      if (output.deployUrl)     links.push(ghLink('🌐 Live Deployment', output.deployUrl));
       if (output.confluenceUrl) links.push(ghLink('Confluence FRD', output.confluenceUrl));
       if (output.frdId)         links.push(confLink('Confluence API Docs', output.frdId));
       if (GH_OWNER && GH_REPO)  links.push(ghLink('README.md', `https://github.com/${GH_OWNER}/${GH_REPO}/blob/main/README.md`));

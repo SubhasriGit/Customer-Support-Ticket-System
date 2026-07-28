@@ -69,6 +69,11 @@ async function addPRComment(prNumber, comment) {
 }
 
 async function waitForPRApproval(prNumber, pollIntervalMs = 15000, timeoutMs = 3600000) {
+  if (process.env.HITL_AUTO_APPROVE === 'true') {
+    console.log(`[HITL] AUTO_APPROVE enabled — skipping PR #${prNumber} review gate.`);
+    return { decision: 'approved', prNumber };
+  }
+
   console.log(`[HITL] Waiting for PR #${prNumber} approval...`);
   console.log(`[HITL] Type "approve" or "reject [feedback]" here, OR approve on GitHub — whichever comes first.`);
 
@@ -117,6 +122,11 @@ async function waitForPRApproval(prNumber, pollIntervalMs = 15000, timeoutMs = 3
 }
 
 async function waitForStdinApproval(phaseName, summary = '') {
+  if (process.env.HITL_AUTO_APPROVE === 'true') {
+    console.log(`[HITL:${phaseName}] AUTO_APPROVE enabled — skipping interactive gate.`);
+    return { decision: 'approved' };
+  }
+
   console.log(`\n${'─'.repeat(60)}`);
   console.log(`[HITL:${phaseName}] Phase complete — review the output above.`);
   if (summary) console.log(`[HITL:${phaseName}] Output summary:\n${summary}`);
