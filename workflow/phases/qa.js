@@ -32,33 +32,34 @@ async function run({ feedback } = {}) {
   if (feedback) console.log(`[qa] Incorporating feedback: ${feedback}`);
 
   // ── 1. Start backend (serves frontend build + API on port 3000) ────────────
-  console.log('\n[qa] Step 1/3 — Starting server on port 3000...');
+  const port = process.env.PORT || '3001';
+  console.log(`\n[qa] Step 1/3 — Starting server on port ${port}...`);
   let serverProc = null;
   const alreadyUp = (() => {
-    try { execSync('curl -sf http://localhost:3000/health', { stdio: 'pipe' }); return true; } catch { return false; }
+    try { execSync(`curl -sf http://localhost:${port}/health`, { stdio: 'pipe' }); return true; } catch { return false; }
   })();
 
   if (alreadyUp) {
-    console.log('[qa] Server already running on port 3000.');
+    console.log(`[qa] Server already running on port ${port}.`);
   } else {
     serverProc = spawn('node', ['server.js'], {
       cwd: BACKEND,
-      env: { ...process.env, PORT: '3000' },
+      env: { ...process.env, PORT: port },
       detached: false,
       stdio: 'inherit',
     });
     console.log('[qa] Waiting for server to be ready...');
-    if (!waitForPort(3000)) throw new Error('Server did not start within 30s');
-    console.log('[qa] ✅ Server ready at http://localhost:3000');
+    if (!waitForPort(parseInt(port))) throw new Error(`Server did not start within 30s`);
+    console.log(`[qa] ✅ Server ready at http://localhost:${port}`);
   }
 
   try {
-    // ── 2. Run Playwright tests ─────────────────────────────────────────────
-    console.log('\n[qa] Step 2/3 — Running Playwright E2E tests...');
+    // ── 2. Run Cucumber BDD tests ───────────────────────────────────────────
+    console.log('\n[qa] Step 2/3 — Running Cucumber BDD tests...');
     let output = '';
     let exitCode = 0;
     try {
-      output = execSync('npx playwright test --reporter=list', {
+      output = execSync('npx cucumber-js --config cucumber.js', {
         cwd: TESTS,
         encoding: 'utf8',
         stdio: 'pipe',
@@ -70,35 +71,39 @@ async function run({ feedback } = {}) {
 
     console.log(output);
 
+    // Generate HTML report from Cucumber JSON
+    try {
+      execSync('node cucumber-report/generate.js', { cwd: TESTS, stdio: 'pipe' });
+    } catch { /* non-fatal */ }
+
     // ── 3. Parse results ─────────────────────────────────────────────────────
     console.log('\n[qa] Step 3/3 — Parsing results...');
-    const passMatch  = output.match(/(\d+) passed/);
-    const failMatch  = output.match(/(\d+) failed/);
-    const totalMatch = output.match(/Running (\d+) tests/);
-    const passed  = passMatch  ? parseInt(passMatch[1])  : 0;
-    const failed  = failMatch  ? parseInt(failMatch[1])  : 0;
-    const total   = totalMatch ? parseInt(totalMatch[1]) : passed + failed;
+    const scenarioMatch = output.match(/(\d+) scenarios? \(([^)]+)\)/);
+    const stepMatch     = output.match(/(\d+) steps? \(([^)]+)\)/);
+    const passedScen    = scenarioMatch ? (scenarioMatch[2].match(/(\d+) passed/) || [])[1] || '0' : '0';
+    const failedScen    = scenarioMatch ? (scenarioMatch[2].match(/(\d+) failed/) || [])[1] || '0' : '0';
+    const totalScen     = scenarioMatch ? parseInt(scenarioMatch[1]) : 0;
+    const passedSteps   = stepMatch     ? (stepMatch[2].match(/(\d+) passed/)     || [])[1] || '0' : '0';
     const healLog = path.join(ROOT, 'workflow', 'self-healing', 'healing-log.json');
     const healed  = fs.existsSync(healLog)
       ? JSON.parse(fs.readFileSync(healLog, 'utf8')).length
       : 0;
 
     console.log('\n[qa] ─────────────────────────────────────────────');
-    console.log('[qa] QA RESULTS');
-    console.log(`[qa]   Total  : ${total}`);
-    console.log(`[qa]   Passed : ${passed}`);
-    console.log(`[qa]   Failed : ${failed}`);
-    console.log(`[qa]   Healed : ${healed} selector(s) auto-corrected`);
-    console.log(`[qa]   Report : tests/playwright-report/`);
+    console.log('[qa] QA RESULTS (Cucumber BDD)');
+    console.log(`[qa]   Scenarios : ${totalScen} (${passedScen} passed, ${failedScen} failed)`);
+    console.log(`[qa]   Steps     : ${passedSteps} passed`);
+    console.log(`[qa]   Healed    : ${healed} selector(s) auto-corrected`);
+    console.log(`[qa]   Report    : tests/cucumber-report/html/index.html`);
     if (exitCode === 0) {
-      console.log('[qa] ✅ All tests passed — ready for HITL sign-off');
+      console.log('[qa] ✅ All scenarios passed — ready for HITL sign-off');
     } else {
-      console.log('[qa] ❌ Some tests failed — review above output before approving');
+      console.log('[qa] ❌ Some scenarios failed — review above output before approving');
     }
     console.log('[qa] ─────────────────────────────────────────────');
     console.log('[qa] HITL REVIEW REQUIRED — Approve to complete the pipeline.');
 
-    return { total, passed, failed, healed, exitCode };
+    return { totalScen, passedScen, failedScen, healed, exitCode };
   } finally {
     if (serverProc) serverProc.kill();
   }
