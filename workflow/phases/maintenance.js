@@ -84,9 +84,9 @@ async function run({ feedback } = {}) {
   try {
     const story = await jiraRequest('POST', '/rest/api/3/issue', {
       fields: {
-        project: { key: 'KAN' },
+        project: { key: process.env.JIRA_PROJECT_KEY },
         issuetype: { name: 'Story' },
-        parent: { key: 'KAN-2' },
+        parent: { key: process.env.JIRA_EPIC_KEY },
         summary: 'Maintenance & Post-Deployment Support',
         description: {
           type: 'doc', version: 1,
@@ -165,7 +165,8 @@ async function run({ feedback } = {}) {
   let healthStatus = 'unknown';
   try {
     const { execSync } = require('child_process');
-    const res = execSync('curl -sf http://localhost:3000/health', { encoding: 'utf8', stdio: 'pipe' });
+    const port = process.env.PORT || '3001';
+    const res = execSync(`curl -sf http://localhost:${port}/health`, { encoding: 'utf8', stdio: 'pipe' });
     healthStatus = JSON.parse(res).status;
     console.log(`[maintenance] ✅ Health check: ${healthStatus}`);
   } catch {
@@ -173,7 +174,7 @@ async function run({ feedback } = {}) {
     healthStatus = 'unreachable';
   }
 
-  const localUrl  = 'http://localhost:3000';
+  const localUrl  = `http://localhost:${process.env.PORT || '3001'}`;
   const renderUrl = process.env.RENDER_URL;
 
   console.log('\n[maintenance] ─────────────────────────────────────────');

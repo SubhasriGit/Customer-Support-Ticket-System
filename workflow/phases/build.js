@@ -94,7 +94,7 @@ async function run({ feedback } = {}) {
     serverFiles: countFiles(serverDir),
   };
 
-  const localUrl   = 'http://localhost:3000';
+  const localUrl   = `http://localhost:${process.env.PORT || '3001'}`;
   const renderUrl  = process.env.RENDER_URL;
 
   console.log(`\n[build] ─────────────────────────────────────────`);

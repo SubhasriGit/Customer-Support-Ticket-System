@@ -32,24 +32,25 @@ async function run({ feedback } = {}) {
   if (feedback) console.log(`[qa] Incorporating feedback: ${feedback}`);
 
   // ── 1. Start backend (serves frontend build + API on port 3000) ────────────
-  console.log('\n[qa] Step 1/3 — Starting server on port 3000...');
+  const port = process.env.PORT || '3001';
+  console.log(`\n[qa] Step 1/3 — Starting server on port ${port}...`);
   let serverProc = null;
   const alreadyUp = (() => {
-    try { execSync('curl -sf http://localhost:3000/health', { stdio: 'pipe' }); return true; } catch { return false; }
+    try { execSync(`curl -sf http://localhost:${port}/health`, { stdio: 'pipe' }); return true; } catch { return false; }
   })();
 
   if (alreadyUp) {
-    console.log('[qa] Server already running on port 3000.');
+    console.log(`[qa] Server already running on port ${port}.`);
   } else {
     serverProc = spawn('node', ['server.js'], {
       cwd: BACKEND,
-      env: { ...process.env, PORT: '3000' },
+      env: { ...process.env, PORT: port },
       detached: false,
       stdio: 'inherit',
     });
     console.log('[qa] Waiting for server to be ready...');
-    if (!waitForPort(3000)) throw new Error('Server did not start within 30s');
-    console.log('[qa] ✅ Server ready at http://localhost:3000');
+    if (!waitForPort(parseInt(port))) throw new Error(`Server did not start within 30s`);
+    console.log(`[qa] ✅ Server ready at http://localhost:${port}`);
   }
 
   try {
