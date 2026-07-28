@@ -116,4 +116,33 @@ async function waitForPRApproval(prNumber, pollIntervalMs = 15000, timeoutMs = 3
   return { decision: 'timeout', prNumber };
 }
 
-module.exports = { createPR, getPRStatus, getPRReviews, addPRComment, waitForPRApproval };
+async function waitForStdinApproval(phaseName, summary = '') {
+  console.log(`\n${'─'.repeat(60)}`);
+  console.log(`[HITL:${phaseName}] Phase complete — review the output above.`);
+  if (summary) console.log(`[HITL:${phaseName}] Output summary:\n${summary}`);
+  console.log(`[HITL:${phaseName}] Type "approve" to proceed, or "reject <feedback>" to re-run with changes.`);
+  console.log('─'.repeat(60));
+
+  const readline = require('readline');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
+
+  return new Promise((resolve) => {
+    rl.on('line', (line) => {
+      const trimmed = line.trim().toLowerCase();
+      if (trimmed === 'approve' || trimmed === 'approved') {
+        rl.close();
+        console.log(`[HITL:${phaseName}] Approved — proceeding to next phase.`);
+        resolve({ decision: 'approved' });
+      } else if (trimmed.startsWith('reject') || trimmed.startsWith('changes')) {
+        const feedback = line.replace(/^(reject|changes[_\s]?requested):?\s*/i, '').trim();
+        rl.close();
+        console.log(`[HITL:${phaseName}] Changes requested — re-running phase with feedback.`);
+        resolve({ decision: 'changes_requested', feedback });
+      } else {
+        console.log(`[HITL:${phaseName}] Unrecognised input. Type "approve" or "reject <feedback>".`);
+      }
+    });
+  });
+}
+
+module.exports = { createPR, getPRStatus, getPRReviews, addPRComment, waitForPRApproval, waitForStdinApproval };

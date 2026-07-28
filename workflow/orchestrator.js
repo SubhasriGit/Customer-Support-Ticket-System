@@ -2,7 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const { prePhaseHook }        = require('./hooks/pre-phase');
 const { postPhaseHook }       = require('./hooks/post-phase');
 const { onFailureHook }       = require('./hooks/on-failure');
-const { waitForPRApproval, addPRComment } = require('./hitl/reviewer');
+const { waitForPRApproval, addPRComment, waitForStdinApproval } = require('./hitl/reviewer');
 const { promptRejectionAction }           = require('./hitl/prompt');
 
 const PHASES = ['requirement_analysis', 'app_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
@@ -194,25 +194,16 @@ class Orchestrator {
   }
 
   async requestHITLReview(phaseName, output) {
-    // Development phase: HITL via GitHub PR review
+    const summary = JSON.stringify(output, null, 2).slice(0, 800);
+
+    // Development phase: HITL via GitHub PR review + stdin fallback
     if (phaseName === 'development' && output.prNumber) {
-      console.log(`[HITL] Awaiting PR #${output.prNumber} review on GitHub...`);
+      console.log(`[HITL] PR #${output.prNumber} created. Review on GitHub, then type "approve" or "reject <feedback>" here.`);
       return waitForPRApproval(output.prNumber);
     }
 
-    // Other phases with a PR: post comment then wait
-    if (output.prNumber) {
-      const summary = JSON.stringify(output, null, 2).slice(0, 1000);
-      await addPRComment(
-        output.prNumber,
-        `## HITL Review Request: ${phaseName}\n\`\`\`json\n${summary}\n\`\`\`\nPlease approve or request changes.`
-      );
-      return waitForPRApproval(output.prNumber);
-    }
-
-    // Fallback: auto-approve (phase has no PR wired up yet)
-    console.log(`[HITL:${phaseName}] No PR — auto-approving. Wire up PR creation for full HITL.`);
-    return { decision: 'approved' };
+    // All other phases: stdin HITL with output summary
+    return waitForStdinApproval(phaseName, summary);
   }
 }
 
