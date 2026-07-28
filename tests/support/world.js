@@ -15,7 +15,7 @@ setWorldConstructor(CSTSWorld);
 Before(async function () {
   this.browser = await chromium.launch({ headless: true });
   this.context = await this.browser.newContext({
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || `http://localhost:${process.env.PORT || '3001'}`,
   });
   this.page = await this.context.newPage();
 });
