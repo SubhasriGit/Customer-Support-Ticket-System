@@ -4,6 +4,7 @@ const { postPhaseHook }       = require('./hooks/post-phase');
 const { onFailureHook }       = require('./hooks/on-failure');
 const { waitForPRApproval, addPRComment, waitForStdinApproval } = require('./hitl/reviewer');
 const { promptRejectionAction }           = require('./hitl/prompt');
+const { writeRunDetails }                 = require('./report/run-details');
 
 const PHASES = ['requirement_analysis', 'app_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
 
@@ -33,18 +34,23 @@ class Orchestrator {
       retryHistory:     {},   // technical failure retries per phase
       hitlRetryHistory: {},   // HITL changes-requested retries per phase
       hitlDecisions:    {},
+      phaseOutputs:     {},   // raw output returned by each phase agent
     };
+    this.runStartedAt = null;
   }
 
   async runPipeline(startFrom = 'requirement_analysis') {
     const startIndex = PHASES.indexOf(startFrom);
     if (startIndex === -1) throw new Error(`Unknown phase: ${startFrom}`);
 
+    if (!this.runStartedAt) this.runStartedAt = new Date();
+
     for (const phase of PHASES.slice(startIndex)) {
       await this.runPhase(phase);
     }
 
     console.log('\n[Orchestrator] ✅ Pipeline complete. All phases finished.');
+    writeRunDetails(this.state, this.runStartedAt);
     return this.state;
   }
 
@@ -98,6 +104,9 @@ class Orchestrator {
       console.warn(`[Orchestrator] Quality check failed for "${phaseName}" — auto-retrying (attempt ${this.state.retryHistory[phaseName]}/3)...`);
       return this.runPhase(phaseName, `Quality issue: ${qc.reason}`);
     }
+
+    // ── Store phase output for run report ─────────────────────────────────────
+    this.state.phaseOutputs[phaseName] = output;
 
     // ── HITL gate ──────────────────────────────────────────────────────────────
     const hitlDecision = await this.requestHITLReview(phaseName, output);
