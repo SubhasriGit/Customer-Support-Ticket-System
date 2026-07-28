@@ -13,104 +13,109 @@ if (!CONF_BASE)  console.warn('[run-details] CONFLUENCE_BASE_URL not set — Con
 
 // ── Phase metadata ─────────────────────────────────────────────────────────────
 const PHASE_META = {
-  requirement_analysis: { num: 1, icon: '📋', label: 'Requirement Analysis', agent: 'BA Agent'         },
-  app_analysis:         { num: 2, icon: '🔍', label: 'App Analysis',         agent: 'Analyst Agent'    },
-  design:               { num: 3, icon: '🎨', label: 'Design',               agent: 'Architect Agent'  },
-  development:          { num: 4, icon: '💻', label: 'Development',          agent: 'Dev Agent'        },
-  testing:              { num: 5, icon: '🧪', label: 'Testing',              agent: 'QA Agent'         },
-  deployment:           { num: 6, icon: '🚀', label: 'Deployment',           agent: 'DevOps Agent'     },
-  maintenance:          { num: 7, icon: '🔧', label: 'Maintenance',          agent: 'SRE Agent'        },
+  requirement_analysis: { num: 1, icon: '📋', label: 'Requirement Analysis', agent: 'BA Agent',        desc: 'Parses requirements, creates Jira epic/story hierarchy and sprint plan.' },
+  app_analysis:         { num: 2, icon: '🔍', label: 'App Analysis',         agent: 'Analyst Agent',   desc: 'Analyses the existing app, identifies gaps and creates improvement tasks.' },
+  design:               { num: 3, icon: '🎨', label: 'Design',               agent: 'Architect Agent', desc: 'Produces HLD, LLD and wireframes, published to Confluence.' },
+  development:          { num: 4, icon: '💻', label: 'Development',          agent: 'Dev Agent',       desc: 'Implements features on a feature branch and opens a GitHub PR.' },
+  testing:              { num: 5, icon: '🧪', label: 'Testing',              agent: 'QA Agent',        desc: 'Runs Playwright/Cucumber BDD scenarios with self-healing selectors.' },
+  deployment:           { num: 6, icon: '🚀', label: 'Deployment',          agent: 'DevOps Agent',    desc: 'Builds the artifact, deploys to Render and publishes FRD to Confluence.' },
+  maintenance:          { num: 7, icon: '🔧', label: 'Maintenance',          agent: 'SRE Agent',       desc: 'Creates a Jira maintenance ticket and updates the Confluence runbook.' },
 };
 
-const STATUS_ICON = {
+const STATUS_LABEL = {
   approved:          '✅ Approved',
-  changes_requested: '🔁 Revised',
+  changes_requested: '🔁 Revised & Approved',
   timeout:           '⏱️ Timed Out',
   skipped:           '⏭️ Skipped',
   in_progress:       '🔄 In Progress',
 };
 
 // ── Link helpers ───────────────────────────────────────────────────────────────
-function jiraLink(key)       { return JIRA_BASE ? `[${key}](${JIRA_BASE}/browse/${key})` : key; }
+function jiraLink(key)       { return JIRA_BASE ? `[${key}](${JIRA_BASE}/browse/${key})` : `\`${key}\``; }
 function confLink(label, id) {
   const spaceSeg = CONF_SPACE ? `/spaces/${CONF_SPACE}` : '';
-  return CONF_BASE ? `[${label}](${CONF_BASE}${spaceSeg}/pages/${id})` : label;
+  return CONF_BASE ? `[${label}](${CONF_BASE}${spaceSeg}/pages/${id})` : `\`${label}\``;
 }
 function ghLink(label, url)  { return `[${label}](${url})`; }
 
-// ── Per-phase artifact extraction ──────────────────────────────────────────────
-function extractLinks(phaseName, output = {}) {
-  const links = [];
+// ── Per-phase artifact bullets ─────────────────────────────────────────────────
+function extractArtifacts(phaseName, output = {}) {
+  const items = [];
 
   switch (phaseName) {
     case 'requirement_analysis':
-      (output.epics   || []).forEach(k => links.push(jiraLink(k)));
-      (output.stories || []).forEach(k => links.push(jiraLink(k)));
+      (output.epics   || []).forEach(k => items.push(`${jiraLink(k)} — Epic`));
+      (output.stories || []).forEach(k => items.push(`${jiraLink(k)} — Story`));
       if (output.plan?.sprints?.length) {
-        links.push(`\`${output.plan.sprints.length} sprints · ${output.plan.totalStoryPoints} pts\``);
+        items.push(`📅 Sprint plan: **${output.plan.sprints.length} sprints** · **${output.plan.totalStoryPoints} story points**`);
+        (output.plan.sprints || []).forEach((s, i) => {
+          if (s.name) items.push(`  - Sprint ${i + 1}: ${s.name}${s.storyPoints ? ` (${s.storyPoints} pts)` : ''}`);
+        });
       }
       break;
 
     case 'app_analysis':
-      if (output.confluenceUrl) links.push(ghLink('📄 Gap Report', output.confluenceUrl));
-      (output.jiraTasks || []).forEach(k => links.push(jiraLink(k)));
-      if (output.gaps?.length)  links.push(`\`${output.gaps.length} gap(s) found\``);
+      if (output.confluenceUrl) items.push(`📄 ${ghLink('Gap Report', output.confluenceUrl)}`);
+      (output.jiraTasks || []).forEach(k => items.push(`${jiraLink(k)} — Task`));
+      if (output.gaps?.length)  items.push(`🔎 **${output.gaps.length} gap(s)** identified`);
       break;
 
     case 'design':
-      if (output.confluenceUrl) links.push(ghLink('🏗️ Architecture', output.confluenceUrl));
-      if (output.hld)           links.push(confLink('HLD', output.hld));
-      if (output.lld)           links.push(confLink('LLD', output.lld));
-      if (output.wireframes)    links.push(confLink('Wireframes', output.wireframes));
+      if (output.confluenceUrl) items.push(`🏗️ ${ghLink('Architecture Document', output.confluenceUrl)}`);
+      if (output.hld)           items.push(`📐 ${confLink('High-Level Design (HLD)', output.hld)}`);
+      if (output.lld)           items.push(`🔩 ${confLink('Low-Level Design (LLD)', output.lld)}`);
+      if (output.wireframes)    items.push(`🖼️ ${confLink('Wireframes', output.wireframes)}`);
       break;
 
     case 'development':
-      if (output.prUrl)  links.push(ghLink(`🔀 PR #${output.prNumber}`, output.prUrl));
+      if (output.prUrl)  items.push(`🔀 ${ghLink(`Pull Request #${output.prNumber}`, output.prUrl)}`);
       if (output.branch && GH_OWNER && GH_REPO) {
-        links.push(ghLink(`🌿 ${output.branch}`, `https://github.com/${GH_OWNER}/${GH_REPO}/tree/${output.branch}`));
+        items.push(`🌿 ${ghLink(`Branch: ${output.branch}`, `https://github.com/${GH_OWNER}/${GH_REPO}/tree/${output.branch}`)}`);
       }
       break;
 
     case 'testing': {
-      if (output.totalScen !== undefined) {
-        const icon = parseInt(output.failedScen) > 0 ? '❌' : '✅';
-        links.push(`\`${icon} ${output.passedScen}/${output.totalScen} scenarios passed\``);
+      const passed = parseInt(output.passedScen) || 0;
+      const total  = parseInt(output.totalScen)  || 0;
+      const failed = parseInt(output.failedScen) || 0;
+      if (total > 0) {
+        const icon = failed > 0 ? '❌' : '✅';
+        items.push(`${icon} **${passed}/${total} scenarios passed**${failed > 0 ? ` · ${failed} failed` : ''}`);
       }
-      if (output.healed) links.push(`\`🩹 ${output.healed} selector(s) healed\``);
-      const htmlReport = path.join('tests', 'cucumber-report', 'report.html');
-      links.push(`\`📊 ${htmlReport}\``);
+      if (output.healed) items.push(`🩹 **${output.healed}** selector(s) auto-healed`);
+      items.push(`📊 Report: \`tests/cucumber-report/report.html\``);
       break;
     }
 
     case 'deployment':
-      if (output.deployUrl)     links.push(ghLink('🌐 Live Site', output.deployUrl));
-      if (output.confluenceUrl) links.push(ghLink('📄 FRD', output.confluenceUrl));
-      if (output.frdId)         links.push(confLink('API Docs', output.frdId));
-      if (GH_OWNER && GH_REPO)  links.push(ghLink('📘 README', `https://github.com/${GH_OWNER}/${GH_REPO}/blob/main/README.md`));
-      if (output.artifactPath)  links.push(`\`📦 ${output.artifactPath}\``);
+      if (output.deployUrl)     items.push(`🌐 **${ghLink('Live Site', output.deployUrl)}**`);
+      if (output.confluenceUrl) items.push(`📄 ${ghLink('Functional Requirements Document (FRD)', output.confluenceUrl)}`);
+      if (output.frdId)         items.push(`📘 ${confLink('API Documentation', output.frdId)}`);
+      if (GH_OWNER && GH_REPO)  items.push(`📖 ${ghLink('README.md', `https://github.com/${GH_OWNER}/${GH_REPO}/blob/main/README.md`)}`);
+      if (output.artifactPath)  items.push(`📦 Artifact: \`${output.artifactPath}\``);
       break;
 
     case 'maintenance':
-      if (output.jiraKey)    links.push(jiraLink(output.jiraKey));
-      if (output.confPageId) links.push(confLink('📖 Runbook', output.confPageId));
-      if (output.renderUrl)  links.push(ghLink('🌐 Render', output.renderUrl));
+      if (output.jiraKey)    items.push(`${jiraLink(output.jiraKey)} — Maintenance Ticket`);
+      if (output.confPageId) items.push(`📖 ${confLink('Runbook', output.confPageId)}`);
+      if (output.renderUrl)  items.push(`🌐 ${ghLink('Render Deployment', output.renderUrl)}`);
       if (output.healthStatus) {
         const hIcon = output.healthStatus === 'healthy' ? '💚' : '🔴';
-        links.push(`\`${hIcon} Health: ${output.healthStatus}\``);
+        items.push(`${hIcon} Health check: **${output.healthStatus}**`);
       }
       break;
   }
 
-  return links;
+  return items;
 }
 
 function phaseStatus(phaseName, state) {
   if (state.completedPhases?.includes(phaseName)) {
     const decision = state.hitlDecisions?.[phaseName]?.decision || 'approved';
-    return STATUS_ICON[decision] || '✅ Done';
+    return STATUS_LABEL[decision] || '✅ Done';
   }
-  if (state.currentPhase === phaseName) return STATUS_ICON.in_progress;
-  return STATUS_ICON.skipped;
+  if (state.currentPhase === phaseName) return STATUS_LABEL.in_progress;
+  return STATUS_LABEL.skipped;
 }
 
 function fmtDate(d) {
@@ -125,80 +130,99 @@ function fmtDuration(startedAt, finishedAt) {
   return min > 0 ? `${min}m ${sec}s` : `${sec}s`;
 }
 
+// ── Phase section ──────────────────────────────────────────────────────────────
+function buildPhaseSection(phaseName, state) {
+  const meta      = PHASE_META[phaseName];
+  const output    = state.phaseOutputs?.[phaseName] || {};
+  const status    = phaseStatus(phaseName, state);
+  const artifacts = extractArtifacts(phaseName, output);
+  const feedback  = state.hitlDecisions?.[phaseName]?.feedback;
+
+  const lines = [
+    `### ${meta.icon} Phase ${meta.num} — ${meta.label}`,
+    '',
+    `**Agent:** ${meta.agent} &nbsp;·&nbsp; **Status:** ${status}`,
+    '',
+    `> ${meta.desc}`,
+    '',
+  ];
+
+  if (artifacts.length > 0) {
+    lines.push('**Artifacts & Links**');
+    lines.push('');
+    artifacts.forEach(a => lines.push(`- ${a}`));
+    lines.push('');
+  } else {
+    lines.push('*No artifacts recorded for this phase.*');
+    lines.push('');
+  }
+
+  if (feedback) {
+    lines.push(`> 💬 **HITL Feedback:** ${feedback}`);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
 // ── Highlights section ─────────────────────────────────────────────────────────
 function buildHighlights(state) {
   const lines = [];
   const out   = state.phaseOutputs || {};
 
-  // Jira items created
   const epics   = out.requirement_analysis?.epics   || [];
   const stories = out.requirement_analysis?.stories || [];
-  if (epics.length + stories.length > 0) {
-    lines.push(`- **JIRA**: ${epics.length} epic(s), ${stories.length} story(ies) created`);
-  }
+  if (epics.length + stories.length > 0)
+    lines.push(`🗂️ **JIRA items created:** ${epics.length} epic(s) · ${stories.length} story(ies)`);
 
-  // Sprint plan
   const plan = out.requirement_analysis?.plan;
-  if (plan?.sprints?.length) {
-    lines.push(`- **Sprint plan**: ${plan.sprints.length} sprints · ${plan.totalStoryPoints} story points`);
-  }
+  if (plan?.sprints?.length)
+    lines.push(`📅 **Sprint plan:** ${plan.sprints.length} sprints · ${plan.totalStoryPoints} story points`);
 
-  // PR
   const pr = out.development;
-  if (pr?.prUrl) lines.push(`- **PR**: [#${pr.prNumber}](${pr.prUrl}) → ${pr.branch || ''}`);
+  if (pr?.prUrl)
+    lines.push(`🔀 **Pull Request:** ${ghLink(`#${pr.prNumber}`, pr.prUrl)} → \`${pr.branch || ''}\``);
 
-  // Test results
   const qa = out.testing;
   if (qa?.totalScen !== undefined) {
-    lines.push(`- **Tests**: ${qa.passedScen}/${qa.totalScen} scenarios passed`);
+    const icon = parseInt(qa.failedScen) > 0 ? '❌' : '✅';
+    lines.push(`${icon} **Test results:** ${qa.passedScen}/${qa.totalScen} scenarios passed`);
   }
 
-  // Live URL
   const dep = out.deployment || out.build;
-  if (dep?.deployUrl) lines.push(`- **Live URL**: ${dep.deployUrl}`);
+  if (dep?.deployUrl)
+    lines.push(`🌐 **Live URL:** ${dep.deployUrl}`);
 
-  return lines.length ? lines.join('\n') : '- *(no highlights available)*';
+  return lines.length
+    ? lines.join('  \n')
+    : '*No highlights available.*';
 }
 
 // ── Main generator ─────────────────────────────────────────────────────────────
 function generateRunDetails(state, startedAt) {
-  const PHASES    = Object.keys(PHASE_META);
+  const PHASES      = Object.keys(PHASE_META);
   const finishedAt  = new Date();
   const completed   = state.completedPhases?.length || 0;
   const allPassed   = completed === PHASES.length;
-  const resultBadge = allPassed ? '✅ All phases completed' : `⚠️ ${completed}/${PHASES.length} phases completed`;
+  const resultBadge = allPassed
+    ? '✅ **All 7 phases completed successfully**'
+    : `⚠️ **${completed} / ${PHASES.length} phases completed**`;
 
-  // ── Phase table rows
-  const rows = PHASES.map(phase => {
-    const meta   = PHASE_META[phase];
-    const output = state.phaseOutputs?.[phase] || {};
-    const status = phaseStatus(phase, state);
-    const links  = extractLinks(phase, output);
-    const linkCell = links.length ? links.join(' · ') : '—';
-    return `| ${meta.num} | ${meta.icon} **${meta.label}** | ${meta.agent} | ${status} | ${linkCell} |`;
-  });
+  const phaseSections = PHASES.map(p => buildPhaseSection(p, state)).join('---\n\n');
 
   return [
     '# 🚀 CSTS Pipeline — Run Report',
+    '',
+    '> **Project:** Customer Support Ticket System &nbsp;·&nbsp; **Pipeline:** AI-Driven SDLC',
     '',
     '---',
     '',
     '## 📋 Run Summary',
     '',
-    '| | |',
-    '|:--|:--|',
-    `| 🕐 **Started**    | ${fmtDate(startedAt)} |`,
-    `| 🏁 **Completed**  | ${fmtDate(finishedAt)} |`,
-    `| ⏱️ **Duration**   | ${fmtDuration(startedAt, finishedAt)} |`,
-    `| 📊 **Result**     | ${resultBadge} |`,
-    '',
-    '---',
-    '',
-    '## 🗂️ Phase Results',
-    '',
-    '| # | Phase | Agent | Status | Artifacts & Links |',
-    '|:-:|:------|:------|:------:|:------------------|',
-    ...rows,
+    `🕐 **Started:** &nbsp; ${fmtDate(startedAt)}  `,
+    `🏁 **Completed:** &nbsp; ${fmtDate(finishedAt)}  `,
+    `⏱️ **Duration:** &nbsp; ${fmtDuration(startedAt, finishedAt)}  `,
+    `📊 **Result:** &nbsp; ${resultBadge}  `,
     '',
     '---',
     '',
@@ -206,6 +230,11 @@ function generateRunDetails(state, startedAt) {
     '',
     buildHighlights(state),
     '',
+    '---',
+    '',
+    '## 🗂️ Phase Details',
+    '',
+    phaseSections,
     '---',
     '',
     `*Generated by CSTS Pipeline Orchestrator · ${fmtDate(finishedAt)}*`,
