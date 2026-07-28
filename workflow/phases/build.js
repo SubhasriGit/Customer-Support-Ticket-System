@@ -52,8 +52,8 @@ async function deployToRender() {
   const rawUrl    = svcRes.body?.serviceDetails?.url || '';
   const deployUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`) : null;
 
-  // Trigger deploy
-  const deployRes = await renderRequest('POST', `/v1/services/${serviceId}/deploys`, { clearCache: false });
+  // Trigger deploy — body must use Render's enum string, not a boolean
+  const deployRes = await renderRequest('POST', `/v1/services/${serviceId}/deploys`, { clearCache: 'do_not_clear' });
   if (deployRes.status !== 201 && deployRes.status !== 200) {
     throw new Error(`Render deploy trigger failed (HTTP ${deployRes.status}): ${JSON.stringify(deployRes.body)}`);
   }
@@ -69,7 +69,7 @@ async function deployToRender() {
   while (Date.now() - startMs < TIMEOUT_MS) {
     await new Promise(r => setTimeout(r, POLL_MS));
 
-    const statusRes = await renderRequest('GET', `/v1/deploys/${deployId}`);
+    const statusRes = await renderRequest('GET', `/v1/services/${serviceId}/deploys/${deployId}`);
     const status    = statusRes.body?.status || statusRes.body?.deploy?.status;
     const elapsed   = Math.round((Date.now() - startMs) / 1000);
     console.log(`[build]    Render status: ${status} (${elapsed}s elapsed)`);
