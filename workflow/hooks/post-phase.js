@@ -1,10 +1,11 @@
 const QUALITY_CHECKS = {
-  analysis:      (output) => !!(output.epics?.length && output.stories?.length),
-  plan:          (output) => !!(output.plan?.phases?.length),
-  design:        (output) => !!(output.architecture && output.hld && output.lld),
-  development:   (output) => !!(output.prUrl),
-  documentation: (output) => !!(output.confluenceUrl && output.readmePath),
-  build:         (output) => !!(output.artifactPath),
+  requirement_analysis: (output) => !!(output.epics?.length && output.stories?.length),
+  app_analysis:         (output) => !!(output.confluenceUrl && output.scan),
+  design:               (output) => !!(output.architecture && output.hld && output.lld),
+  development:          (output) => !!(output.prUrl),
+  testing:              (output) => output.exitCode === 0,
+  deployment:           (output) => !!(output.artifactPath),
+  maintenance:          (output) => !!(output.confPageId),
 };
 
 async function postPhaseHook(phaseName, output) {

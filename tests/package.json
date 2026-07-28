@@ -2,11 +2,15 @@
   "name": "csts-tests",
   "version": "1.0.0",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:report": "playwright show-report"
+    "test": "cucumber-js --config cucumber.js",
+    "test:headed": "BASE_URL=http://localhost:3000 cucumber-js --config cucumber.js",
+    "test:report": "node cucumber-report/generate.js",
+    "test:full": "cucumber-js --config cucumber.js && node cucumber-report/generate.js",
+    "test:playwright": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.44.0"
+    "@cucumber/cucumber": "^13.2.0",
+    "@playwright/test": "^1.44.0",
+    "multiple-cucumber-html-reporter": "^3.10.0"
   }
 }

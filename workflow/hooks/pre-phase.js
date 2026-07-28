@@ -1,12 +1,13 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 const REQUIRED_ENV = {
-  analysis:      ['JIRA_BASE_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN', 'JIRA_PROJECT_KEY', 'ANTHROPIC_API_KEY'],
-  plan:          ['JIRA_BASE_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN', 'ANTHROPIC_API_KEY'],
-  design:        ['CONFLUENCE_BASE_URL', 'CONFLUENCE_SPACE_KEY', 'ANTHROPIC_API_KEY'],
-  development:   ['GITHUB_PAT', 'GITHUB_OWNER', 'GITHUB_REPO', 'ANTHROPIC_API_KEY'],
-  documentation: ['CONFLUENCE_BASE_URL', 'CONFLUENCE_SPACE_KEY', 'GITHUB_PAT', 'ANTHROPIC_API_KEY'],
-  build:         ['GITHUB_PAT', 'GITHUB_OWNER', 'GITHUB_REPO'],
+  requirement_analysis: ['JIRA_BASE_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN', 'JIRA_PROJECT_KEY', 'ANTHROPIC_API_KEY'],
+  app_analysis:         ['JIRA_BASE_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN', 'JIRA_PROJECT_KEY', 'ANTHROPIC_API_KEY'],
+  design:               ['CONFLUENCE_BASE_URL', 'CONFLUENCE_SPACE_KEY', 'ANTHROPIC_API_KEY'],
+  development:          ['GITHUB_PAT', 'GITHUB_OWNER', 'GITHUB_REPO', 'ANTHROPIC_API_KEY'],
+  testing:              ['ANTHROPIC_API_KEY'],
+  deployment:           ['GITHUB_PAT', 'GITHUB_OWNER', 'GITHUB_REPO'],
+  maintenance:          ['JIRA_BASE_URL', 'JIRA_EMAIL', 'JIRA_API_TOKEN', 'CONFLUENCE_BASE_URL', 'CONFLUENCE_SPACE_KEY'],
 };
 
 async function prePhaseHook(phaseName, context = {}) {

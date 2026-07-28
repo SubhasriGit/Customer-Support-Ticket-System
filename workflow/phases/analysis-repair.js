@@ -70,8 +70,8 @@ const REMAINING_STORIES = [
 // KAN-3 already exists — just need its subtasks
 const STORY1_KAN3_TASKS = ['Implement NLP category classifier', 'Add category field to ticket schema', 'Display category in ticket list'];
 
-const EPIC_KEY = 'KAN-2';
-const STORY1_KEY = 'KAN-3';
+const EPIC_KEY   = process.env.JIRA_EPIC_KEY;
+const STORY1_KEY = process.env.JIRA_STORY1_KEY;
 
 async function main() {
   console.log(`\nRepair: completing JIRA hierarchy under epic ${EPIC_KEY}\n`);
@@ -97,7 +97,7 @@ async function main() {
     }
   }
 
-  console.log('\nRepair complete. Check https://subhasree.atlassian.net/jira/software/projects/KAN/boards\n');
+  console.log(`\nRepair complete. Check ${process.env.JIRA_BASE_URL}/jira/software/projects/${process.env.JIRA_PROJECT_KEY}/boards\n`);
 }
 
 main().catch(err => console.error('Fatal:', err.message));

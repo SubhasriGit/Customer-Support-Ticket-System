@@ -212,7 +212,8 @@ async function checkQA() {
   }
 
   // Run tests if server is up
-  const serverUp = (await httpGet('http://localhost:3000/health')).status === 200;
+  const port = process.env.PORT || '3001';
+  const serverUp = (await httpGet(`http://localhost:${port}/health`)).status === 200;
   if (serverUp) {
     console.log(`  ${YELLOW('›')}  Server is running — executing Playwright tests...`);
     try {
@@ -248,11 +249,12 @@ async function checkDeployment() {
   record('GitHub Actions CI workflow', fs.existsSync(ciYml), '.github/workflows/ci.yml');
 
   // Local URL
-  const localHealth = await httpGet('http://localhost:3000/health');
+  const appPort = process.env.PORT || '3001';
+  const localHealth = await httpGet(`http://localhost:${appPort}/health`);
   if (localHealth.status === 200) {
-    record('Application reachable locally', true, 'http://localhost:3000');
+    record('Application reachable locally', true, `http://localhost:${appPort}`);
   } else {
-    record('Application reachable locally', 'warn', 'Server not running — run: cd backend && PORT=3000 node server.js');
+    record('Application reachable locally', 'warn', `Server not running — run: cd backend && node server.js`);
   }
 
   // Render / production URL

@@ -69,35 +69,50 @@ async function addPRComment(prNumber, comment) {
 }
 
 async function waitForPRApproval(prNumber, pollIntervalMs = 15000, timeoutMs = 3600000) {
-  console.log(`[HITL] Waiting for PR #${prNumber} approval... (polling every ${pollIntervalMs / 1000}s)`);
+  console.log(`[HITL] Waiting for PR #${prNumber} approval...`);
+  console.log(`[HITL] Type "approve" or "reject [feedback]" here, OR approve on GitHub — whichever comes first.`);
+
+  const readline = require('readline');
+  let stdinDecision = null;
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
+  rl.on('line', (line) => {
+    const trimmed = line.trim().toLowerCase();
+    if (trimmed === 'approve' || trimmed === 'approved') {
+      stdinDecision = { decision: 'approved', prNumber };
+    } else if (trimmed.startsWith('reject') || trimmed.startsWith('changes')) {
+      const feedback = line.replace(/^(reject|changes[_\s]?requested):?\s*/i, '').trim();
+      stdinDecision = { decision: 'changes_requested', feedback, prNumber };
+    }
+  });
+
   const start = Date.now();
-
   while (Date.now() - start < timeoutMs) {
-    const reviews = await getPRReviews(prNumber);
-    const latestByUser = {};
+    if (stdinDecision) { rl.close(); return stdinDecision; }
 
-    for (const review of reviews) {
-      latestByUser[review.user.login] = review.state;
-    }
+    try {
+      const reviews = await getPRReviews(prNumber);
+      const latestByUser = {};
+      for (const review of reviews) latestByUser[review.user.login] = review.state;
+      const states = Object.values(latestByUser);
 
-    const states = Object.values(latestByUser);
-    const approved = states.some(s => s === 'APPROVED');
-    const changesRequested = states.some(s => s === 'CHANGES_REQUESTED');
-
-    if (changesRequested) {
-      const feedback = reviews.filter(r => r.state === 'CHANGES_REQUESTED').map(r => r.body).join('\n');
-      console.warn(`[HITL] PR #${prNumber} — changes requested.`);
-      return { decision: 'changes_requested', feedback, prNumber };
-    }
-
-    if (approved) {
-      console.log(`[HITL] PR #${prNumber} approved.`);
-      return { decision: 'approved', prNumber };
-    }
+      if (states.some(s => s === 'CHANGES_REQUESTED')) {
+        rl.close();
+        const feedback = reviews.filter(r => r.state === 'CHANGES_REQUESTED').map(r => r.body).join('\n');
+        console.warn(`[HITL] PR #${prNumber} — changes requested.`);
+        return { decision: 'changes_requested', feedback, prNumber };
+      }
+      if (states.some(s => s === 'APPROVED')) {
+        rl.close();
+        console.log(`[HITL] PR #${prNumber} approved (GitHub).`);
+        return { decision: 'approved', prNumber };
+      }
+    } catch { /* network hiccup — keep polling */ }
 
     await new Promise(r => setTimeout(r, pollIntervalMs));
   }
 
+  rl.close();
   return { decision: 'timeout', prNumber };
 }
 

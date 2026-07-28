@@ -140,7 +140,7 @@ module.exports = { run };
 if (require.main === module) {
   run().then(result => {
     console.log('\n[plan] HITL REVIEW REQUIRED');
-    console.log('Review the sprint plan above. Verify JIRA stories at https://subhasree.atlassian.net');
+    console.log(`Review the sprint plan above. Verify JIRA stories at ${process.env.JIRA_BASE_URL}`);
     console.log('Approve to proceed to Design phase.');
   }).catch(err => {
     console.error('[plan] Failed:', err.message);
