@@ -1,6 +1,6 @@
 const QUALITY_CHECKS = {
   requirement_analysis: (output) => !!(output.epics?.length && output.stories?.length),
-  app_analysis:         (output) => !!(output.epics?.length && output.stories?.length),
+  app_analysis:         (output) => !!(output.confluenceUrl && output.scan),
   design:               (output) => !!(output.architecture && output.hld && output.lld),
   development:          (output) => !!(output.prUrl),
   testing:              (output) => output.exitCode === 0,
