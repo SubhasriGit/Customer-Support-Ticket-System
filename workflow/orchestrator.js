@@ -8,6 +8,76 @@ const { writeRunDetails }                 = require('./report/run-details');
 
 const PHASES = ['requirement_analysis', 'app_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
 
+// ── HITL link formatter ────────────────────────────────────────────────────────
+const JIRA_BASE = (process.env.JIRA_BASE_URL         || '').replace(/\/$/, '');
+const CONF_BASE = (process.env.CONFLUENCE_BASE_URL   || '').replace(/\/$/, '');
+const CONF_SPACE = process.env.CONFLUENCE_SPACE_KEY  || '';
+const GH_OWNER  = process.env.GITHUB_OWNER;
+const GH_REPO   = process.env.GITHUB_REPO;
+
+function jiraUrl(key)    { return JIRA_BASE ? `${JIRA_BASE}/browse/${key}` : key; }
+function confUrl(pageId) {
+  const spaceSeg = CONF_SPACE ? `/spaces/${CONF_SPACE}` : '';
+  return CONF_BASE ? `${CONF_BASE}${spaceSeg}/pages/${pageId}` : pageId;
+}
+
+function buildHITLLinks(phaseName, output = {}) {
+  const lines = [];
+
+  switch (phaseName) {
+    case 'requirement_analysis':
+      (output.epics   || []).forEach(k => lines.push(`  Epic   → ${jiraUrl(k)}`));
+      (output.stories || []).forEach(k => lines.push(`  Story  → ${jiraUrl(k)}`));
+      if (output.plan?.sprints?.length) {
+        lines.push(`  Sprint plan: ${output.plan.sprints.length} sprints / ${output.plan.totalStoryPoints} pts`);
+      }
+      break;
+
+    case 'app_analysis':
+      if (output.confluenceUrl) lines.push(`  Gap Report → ${output.confluenceUrl}`);
+      (output.jiraTasks || []).forEach(k => lines.push(`  Task   → ${jiraUrl(k)}`));
+      if (output.gaps?.length) lines.push(`  ${output.gaps.length} gap(s) identified`);
+      break;
+
+    case 'design':
+      if (output.confluenceUrl) lines.push(`  Architecture → ${output.confluenceUrl}`);
+      if (output.hld)            lines.push(`  HLD          → ${confUrl(output.hld)}`);
+      if (output.lld)            lines.push(`  LLD          → ${confUrl(output.lld)}`);
+      if (output.wireframes)     lines.push(`  Wireframes   → ${confUrl(output.wireframes)}`);
+      break;
+
+    case 'development':
+      if (output.prUrl)  lines.push(`  PR #${output.prNumber} → ${output.prUrl}`);
+      if (output.branch && GH_OWNER && GH_REPO) {
+        lines.push(`  Branch → https://github.com/${GH_OWNER}/${GH_REPO}/tree/${output.branch}`);
+      }
+      break;
+
+    case 'testing':
+      if (output.totalScen !== undefined) {
+        lines.push(`  Scenarios: ${output.passedScen}/${output.totalScen} passed`);
+      }
+      if (output.healed) lines.push(`  ${output.healed} selector(s) self-healed`);
+      lines.push(`  HTML report → tests/cucumber-report/report.html`);
+      break;
+
+    case 'deployment':
+      if (output.deployUrl)     lines.push(`  Live URL     → ${output.deployUrl}`);
+      if (output.confluenceUrl) lines.push(`  FRD          → ${output.confluenceUrl}`);
+      if (output.artifactPath)  lines.push(`  Artifact     → ${output.artifactPath}`);
+      break;
+
+    case 'maintenance':
+      if (output.jiraKey)    lines.push(`  Ticket → ${jiraUrl(output.jiraKey)}`);
+      if (output.confPageId) lines.push(`  Runbook → ${confUrl(output.confPageId)}`);
+      if (output.renderUrl)  lines.push(`  Render → ${output.renderUrl}`);
+      if (output.healthStatus) lines.push(`  Health: ${output.healthStatus}`);
+      break;
+  }
+
+  return lines.join('\n');
+}
+
 // Max times a human can request changes before being asked what to do next
 const MAX_HITL_RETRIES = 3;
 
@@ -203,15 +273,16 @@ class Orchestrator {
   }
 
   async requestHITLReview(phaseName, output) {
-    const summary = JSON.stringify(output, null, 2).slice(0, 800);
+    const links = buildHITLLinks(phaseName, output);
+    const summary = links || '  (no links generated for this phase)';
 
     // Development phase: HITL via GitHub PR review + stdin fallback
     if (phaseName === 'development' && output.prNumber) {
-      console.log(`[HITL] PR #${output.prNumber} created. Review on GitHub, then type "approve" or "reject <feedback>" here.`);
+      if (links) console.log(`\n[HITL] Links created this phase:\n${links}`);
       return waitForPRApproval(output.prNumber);
     }
 
-    // All other phases: stdin HITL with output summary
+    // All other phases: stdin HITL with formatted links
     return waitForStdinApproval(phaseName, summary);
   }
 }

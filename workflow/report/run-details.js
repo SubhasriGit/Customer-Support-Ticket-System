@@ -2,8 +2,9 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const fs   = require('fs');
 const path = require('path');
 
-const JIRA_BASE    = process.env.JIRA_BASE_URL;
-const CONF_BASE    = process.env.CONFLUENCE_BASE_URL;
+const JIRA_BASE    = (process.env.JIRA_BASE_URL    || '').replace(/\/$/, '');
+const CONF_BASE    = (process.env.CONFLUENCE_BASE_URL || '').replace(/\/$/, '');
+const CONF_SPACE   = process.env.CONFLUENCE_SPACE_KEY || '';
 
 if (!JIRA_BASE)  console.warn('[run-details] JIRA_BASE_URL not set — JIRA links will be omitted from RunDetails.md');
 if (!CONF_BASE)  console.warn('[run-details] CONFLUENCE_BASE_URL not set — Confluence links will be omitted from RunDetails.md');
@@ -19,7 +20,10 @@ const STATUS_ICON = {
 };
 
 function jiraLink(key)       { return `[${key}](${JIRA_BASE}/browse/${key})`; }
-function confLink(label, id) { return `[${label}](${CONF_BASE}/pages/${id})`; }
+function confLink(label, id) {
+  const spaceSeg = CONF_SPACE ? `/spaces/${CONF_SPACE}` : '';
+  return `[${label}](${CONF_BASE}${spaceSeg}/pages/${id})`;
+}
 function ghLink(label, url)  { return `[${label}](${url})`; }
 function localLink(label, p) { return `\`${label}: ${p}\``; }
 
