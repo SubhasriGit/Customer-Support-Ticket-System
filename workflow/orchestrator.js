@@ -6,7 +6,7 @@ const { waitForPRApproval, addPRComment, waitForStdinApproval } = require('./hit
 const { promptRejectionAction }           = require('./hitl/prompt');
 const { writeRunDetails }                 = require('./report/run-details');
 
-const PHASES = ['requirement_analysis', 'app_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
+const PHASES = ['requirement_analysis', 'project_planning', 'app_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
 
 // ── HITL link formatter ────────────────────────────────────────────────────────
 const JIRA_BASE = (process.env.JIRA_BASE_URL         || '').replace(/\/$/, '');
@@ -31,6 +31,15 @@ function buildHITLLinks(phaseName, output = {}) {
       if (output.plan?.sprints?.length) {
         lines.push(`  Sprint plan: ${output.plan.sprints.length} sprints / ${output.plan.totalStoryPoints} pts`);
       }
+      break;
+
+    case 'project_planning':
+      if (output.mrUrl)            lines.push(`  MR           → ${output.mrUrl}`);
+      if (output.planDocUrl)       lines.push(`  Wiki Plan    → ${output.planDocUrl}`);
+      if (output.milestoneCount)   lines.push(`  Milestones   : ${output.milestoneCount} created`);
+      if (output.issueCount)       lines.push(`  Issues       : ${output.issueCount} created`);
+      if (output.sprints)          lines.push(`  Sprints      : ${output.sprints}`);
+      if (output.totalStoryPoints) lines.push(`  Story points : ${output.totalStoryPoints}`);
       break;
 
     case 'app_analysis':
@@ -259,6 +268,7 @@ class Orchestrator {
   selectAgent(phaseName) {
     const agents = {
       requirement_analysis: require('./phases/requirement_analysis'),
+      project_planning:     require('./phases/project_planning'),
       app_analysis:         require('./phases/app_analysis'),
       design:               require('./phases/design'),
       development:          require('./phases/development'),
