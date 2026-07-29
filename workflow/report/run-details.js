@@ -13,13 +13,14 @@ if (!CONF_BASE)  console.warn('[run-details] CONFLUENCE_BASE_URL not set — Con
 
 // ── Phase metadata ─────────────────────────────────────────────────────────────
 const PHASE_META = {
-  requirement_analysis: { num: 1, icon: '📋', label: 'Requirement Analysis', agent: 'BA Agent',        desc: 'Parses requirements, creates Jira epic/story hierarchy and sprint plan.' },
-  app_analysis:         { num: 2, icon: '🔍', label: 'App Analysis',         agent: 'Analyst Agent',   desc: 'Analyses the existing app, identifies gaps and creates improvement tasks.' },
-  design:               { num: 3, icon: '🎨', label: 'Design',               agent: 'Architect Agent', desc: 'Produces HLD, LLD and wireframes, published to Confluence.' },
-  development:          { num: 4, icon: '💻', label: 'Development',          agent: 'Dev Agent',       desc: 'Implements features on a feature branch and opens a GitHub PR.' },
-  testing:              { num: 5, icon: '🧪', label: 'Testing',              agent: 'QA Agent',        desc: 'Runs Playwright/Cucumber BDD scenarios with self-healing selectors.' },
-  deployment:           { num: 6, icon: '🚀', label: 'Deployment',          agent: 'DevOps Agent',    desc: 'Builds the artifact, deploys to Render and publishes FRD to Confluence.' },
-  maintenance:          { num: 7, icon: '🔧', label: 'Maintenance',          agent: 'SRE Agent',       desc: 'Creates a Jira maintenance ticket and updates the Confluence runbook.' },
+  requirement_analysis: { num: 1, icon: '📋', label: 'Requirement Analysis', agent: 'BA Agent',       desc: 'Parses requirements, creates Jira epic/story hierarchy and sprint plan.' },
+  project_planning:     { num: 2, icon: '📅', label: 'Project Planning',     agent: 'Planning Agent', desc: 'Builds formal project plan from JIRA output and publishes to GitLab wiki.' },
+  app_analysis:         { num: 3, icon: '🔍', label: 'App Analysis',         agent: 'Analyst Agent',  desc: 'Analyses the existing app, identifies gaps and creates improvement tasks.' },
+  design:               { num: 4, icon: '🎨', label: 'Design',               agent: 'Architect Agent', desc: 'Produces HLD, LLD and wireframes, published to Confluence.' },
+  development:          { num: 5, icon: '💻', label: 'Development',          agent: 'Dev Agent',      desc: 'Implements features on a feature branch and opens a GitHub PR.' },
+  testing:              { num: 6, icon: '🧪', label: 'Testing',              agent: 'QA Agent',       desc: 'Runs Playwright/Cucumber BDD scenarios with self-healing selectors.' },
+  deployment:           { num: 7, icon: '🚀', label: 'Deployment',           agent: 'DevOps Agent',   desc: 'Builds the artifact, deploys to Render and publishes FRD to Confluence.' },
+  maintenance:          { num: 8, icon: '🔧', label: 'Maintenance',          agent: 'SRE Agent',      desc: 'Creates a Jira maintenance ticket and updates the Confluence runbook.' },
 };
 
 const STATUS_LABEL = {
@@ -52,6 +53,14 @@ function extractArtifacts(phaseName, output = {}) {
           if (s.name) items.push(`  - Sprint ${i + 1}: ${s.name}${s.storyPoints ? ` (${s.storyPoints} pts)` : ''}`);
         });
       }
+      break;
+
+    case 'project_planning':
+      if (output.mrUrl)        items.push(`🔀 ${ghLink(`MR !${output.mrIid} — CSTS Project Plan`, output.mrUrl)}`);
+      if (output.planDocUrl)   items.push(`📄 ${ghLink('GitLab Wiki Plan', output.planDocUrl)}`);
+      if (output.milestoneCount) items.push(`🏁 **${output.milestoneCount} milestone(s)** created`);
+      if (output.issueCount)     items.push(`🎫 **${output.issueCount} issue(s)** created`);
+      if (output.sprints)        items.push(`📅 **${output.sprints} sprint(s)** · **${output.totalStoryPoints || 0} story points**`);
       break;
 
     case 'app_analysis':
@@ -179,9 +188,13 @@ function buildHighlights(state) {
   if (plan?.sprints?.length)
     lines.push(`📅 **Sprint plan:** ${plan.sprints.length} sprints · ${plan.totalStoryPoints} story points`);
 
+  const pp = out.project_planning;
+  if (pp?.mrUrl)
+    lines.push(`🔀 **Plan MR:** ${ghLink(`!${pp.mrIid}`, pp.mrUrl)} → \`${pp.branchName || ''}\``);
+
   const pr = out.development;
   if (pr?.prUrl)
-    lines.push(`🔀 **Pull Request:** ${ghLink(`#${pr.prNumber}`, pr.prUrl)} → \`${pr.branch || ''}\``);
+    lines.push(`🔀 **Dev PR:** ${ghLink(`#${pr.prNumber}`, pr.prUrl)} → \`${pr.branch || ''}\``);
 
   const qa = out.testing;
   if (qa?.totalScen !== undefined) {
