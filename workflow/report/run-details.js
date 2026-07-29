@@ -255,10 +255,11 @@ function generateRunDetails(state, startedAt) {
 }
 
 function writeRunDetails(state, startedAt) {
-  const outPath = path.join(__dirname, '../../RunDetails.md');
+  const ts      = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15); // YYYYMMDDHHmmss (no ms)
+  const outPath = path.join(__dirname, `../../RunDetails${ts}.md`);
   const content = generateRunDetails(state, startedAt);
   fs.writeFileSync(outPath, content, 'utf8');
-  console.log(`\n[Report] ✅ RunDetails.md written → ${outPath}`);
+  console.log(`\n[Report] ✅ RunDetails${ts}.md written → ${outPath}`);
   return outPath;
 }
 
