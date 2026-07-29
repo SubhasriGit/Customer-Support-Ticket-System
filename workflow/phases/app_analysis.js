@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const fs    = require('fs');
 const path  = require('path');
 const https = require('https');
+const { getRequirementsText } = require('../integrations/confluence-requirements');
 
 /**
  * App Analysis & Enhancement Agent (Solutions Analyst Persona)
@@ -20,8 +21,7 @@ const PROJECT_KEY = process.env.JIRA_PROJECT_KEY;
 const CONF_BASE   = process.env.CONFLUENCE_BASE_URL;
 const CONF_SPACE  = process.env.CONFLUENCE_SPACE_KEY;
 
-const ROOT              = path.join(__dirname, '../..');
-const REQUIREMENTS_FILE = path.join(ROOT, 'requirements', 'requirements.txt');
+const ROOT = path.join(__dirname, '../..');
 
 // Story key mapping from plan.js sprint plan — used to parent JIRA subtasks
 const STORY_KEY_MAP = {
@@ -144,9 +144,8 @@ async function createJiraSubtask(summary, description, parentKey) {
 
 // ── Requirements parser (copied from analysis.js) ─────────────────────────────
 
-function parseRequirements(filePath) {
-  const raw   = fs.readFileSync(filePath, 'utf8');
-  const lines = raw.split(/\r?\n/);
+function parseRequirements(text) {
+  const lines = text.split(/\r?\n/);
   const epics  = [];
   let curEpic  = null, curStory = null, descBuf = [], descTarget = null;
 
@@ -430,11 +429,15 @@ async function run({ feedback } = {}) {
   console.log(`[app_analysis]   Test scenarios : ${scenarios.length}`);
   console.log(`[app_analysis]   TODO/FIXME     : ${todos.length}`);
 
-  // Step 2 — Cross-reference against requirements
+  // Step 2 — Cross-reference against requirements (fetched from Confluence)
   console.log('\n[app_analysis] Step 2/4 — Cross-referencing against requirements...');
-  const requirementsData = fs.existsSync(REQUIREMENTS_FILE)
-    ? parseRequirements(REQUIREMENTS_FILE)
-    : [];
+  let requirementsData = [];
+  try {
+    const reqText = await getRequirementsText();
+    requirementsData = parseRequirements(reqText);
+  } catch (err) {
+    console.warn(`[app_analysis] Could not fetch requirements from Confluence: ${err.message}. Continuing without cross-reference.`);
+  }
   const totalStories = requirementsData.reduce((n, e) => n + e.stories.length, 0);
   console.log(`[app_analysis]   Requirements   : ${requirementsData.length} epic(s), ${totalStories} story(ies)`);
 

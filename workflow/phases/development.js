@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const { execSync } = require('child_process');
 const { createPR } = require('../hitl/reviewer');
+const { reviewPR } = require('../integrations/code-review');
 
 /**
  * Development Phase Agent (Dev Persona)
@@ -58,7 +59,11 @@ async function run({ feedback } = {}) {
     base: 'main',
   });
 
-  return { prUrl: pr.html_url, prNumber: pr.number, branch };
+  // Automated code review — posts findings as a PR comment
+  const review = await reviewPR(pr.number);
+  console.log(`[development] Code review complete — verdict: ${review.verdict}`);
+
+  return { prUrl: pr.html_url, prNumber: pr.number, branch, review };
 }
 
 module.exports = { run };

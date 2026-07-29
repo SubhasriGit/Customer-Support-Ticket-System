@@ -18,9 +18,10 @@ const PHASE_META = {
   app_analysis:         { num: 3, icon: '🔍', label: 'App Analysis',         agent: 'Analyst Agent',  desc: 'Analyses the existing app, identifies gaps and creates improvement tasks.' },
   design:               { num: 4, icon: '🎨', label: 'Design',               agent: 'Architect Agent', desc: 'Produces HLD, LLD and wireframes, published to Confluence.' },
   development:          { num: 5, icon: '💻', label: 'Development',          agent: 'Dev Agent',      desc: 'Implements features on a feature branch and opens a GitHub PR.' },
-  testing:              { num: 6, icon: '🧪', label: 'Testing',              agent: 'QA Agent',       desc: 'Runs Playwright/Cucumber BDD scenarios with self-healing selectors.' },
-  deployment:           { num: 7, icon: '🚀', label: 'Deployment',           agent: 'DevOps Agent',   desc: 'Builds the artifact, deploys to Render and publishes FRD to Confluence.' },
-  maintenance:          { num: 8, icon: '🔧', label: 'Maintenance',          agent: 'SRE Agent',      desc: 'Creates a Jira maintenance ticket and updates the Confluence runbook.' },
+  documentation:        { num: 6, icon: '📝', label: 'Documentation',        agent: 'DocWriter Agent',desc: 'Publishes FRD, Architecture, HLD, LLD, Wireframes to Confluence and commits README.md.' },
+  testing:              { num: 7, icon: '🧪', label: 'Testing',              agent: 'QA Agent',       desc: 'Runs Playwright/Cucumber BDD scenarios with self-healing selectors.' },
+  deployment:           { num: 8, icon: '🚀', label: 'Deployment',           agent: 'DevOps Agent',   desc: 'Builds the artifact, deploys to Render and publishes FRD to Confluence.' },
+  maintenance:          { num: 9, icon: '🔧', label: 'Maintenance',          agent: 'SRE Agent',      desc: 'Creates a Jira maintenance ticket and updates the Confluence runbook.' },
 };
 
 const STATUS_LABEL = {
@@ -81,6 +82,21 @@ function extractArtifacts(phaseName, output = {}) {
       if (output.branch && GH_OWNER && GH_REPO) {
         items.push(`🌿 ${ghLink(`Branch: ${output.branch}`, `https://github.com/${GH_OWNER}/${GH_REPO}/tree/${output.branch}`)}`);
       }
+      if (output.review && output.review.verdict !== 'SKIPPED') {
+        const rv = output.review;
+        const icon = rv.verdict === 'APPROVE' ? '✅' : '⚠️';
+        items.push(`${icon} **Code Review:** ${rv.verdict} · ${rv.blockers} blocker(s) · ${rv.majors} major(s) · ${rv.minors} minor(s)`);
+        if (rv.reviewCommentUrl) items.push(`💬 ${ghLink('Review Comment', rv.reviewCommentUrl)}`);
+      }
+      break;
+
+    case 'documentation':
+      if (output.frdUrl)          items.push(`📋 ${ghLink('Functional Requirements Document (FRD)', output.frdUrl)}`);
+      if (output.architectureUrl) items.push(`🏗️ ${ghLink('Architecture Document', output.architectureUrl)}`);
+      if (output.hldUrl)          items.push(`📐 ${ghLink('High Level Design (HLD)', output.hldUrl)}`);
+      if (output.lldUrl)          items.push(`🔩 ${ghLink('Low Level Design (LLD)', output.lldUrl)}`);
+      if (output.wireframesUrl)   items.push(`🖼️ ${ghLink('Wireframes', output.wireframesUrl)}`);
+      if (output.readmeUrl)       items.push(`📖 ${ghLink('README.md (committed to repo)', output.readmeUrl)}`);
       break;
 
     case 'testing': {
@@ -195,6 +211,19 @@ function buildHighlights(state) {
   const pr = out.development;
   if (pr?.prUrl)
     lines.push(`🔀 **Dev PR:** ${ghLink(`#${pr.prNumber}`, pr.prUrl)} → \`${pr.branch || ''}\``);
+  if (pr?.review && pr.review.verdict !== 'SKIPPED') {
+    const rv = pr.review;
+    const icon = rv.verdict === 'APPROVE' ? '✅' : '⚠️';
+    lines.push(`${icon} **Code Review:** ${rv.verdict} — ${rv.blockers}B / ${rv.majors}M / ${rv.minors}m`);
+  }
+
+  const docs = out.documentation;
+  if (docs?.frdUrl)
+    lines.push(`📋 **FRD:** ${ghLink('Functional Requirements Document', docs.frdUrl)}`);
+  if (docs?.architectureUrl)
+    lines.push(`🏗️ **Architecture:** ${ghLink('Confluence Architecture Doc', docs.architectureUrl)}`);
+  if (docs?.readmeUrl)
+    lines.push(`📖 **README:** ${ghLink('README.md committed', docs.readmeUrl)} → \`${docs.branch || ''}\``);
 
   const qa = out.testing;
   if (qa?.totalScen !== undefined) {
@@ -218,7 +247,7 @@ function generateRunDetails(state, startedAt) {
   const completed   = state.completedPhases?.length || 0;
   const allPassed   = completed === PHASES.length;
   const resultBadge = allPassed
-    ? '✅ **All 7 phases completed successfully**'
+    ? `✅ **All ${PHASES.length} phases completed successfully**`
     : `⚠️ **${completed} / ${PHASES.length} phases completed**`;
 
   const phaseSections = PHASES.map(p => buildPhaseSection(p, state)).join('---\n\n');

@@ -6,7 +6,7 @@ const { waitForPRApproval, addPRComment, waitForStdinApproval } = require('./hit
 const { promptRejectionAction }           = require('./hitl/prompt');
 const { writeRunDetails }                 = require('./report/run-details');
 
-const PHASES = ['requirement_analysis', 'project_planning', 'app_analysis', 'design', 'development', 'testing', 'deployment', 'maintenance'];
+const PHASES = ['requirement_analysis', 'project_planning', 'app_analysis', 'design', 'development', 'documentation', 'testing', 'deployment', 'maintenance'];
 
 // ── HITL link formatter ────────────────────────────────────────────────────────
 const JIRA_BASE = (process.env.JIRA_BASE_URL         || '').replace(/\/$/, '');
@@ -60,6 +60,20 @@ function buildHITLLinks(phaseName, output = {}) {
       if (output.branch && GH_OWNER && GH_REPO) {
         lines.push(`  Branch → https://github.com/${GH_OWNER}/${GH_REPO}/tree/${output.branch}`);
       }
+      if (output.review && output.review.verdict !== 'SKIPPED') {
+        const rv = output.review;
+        lines.push(`  Code Review  : ${rv.verdict} (${rv.blockers}B / ${rv.majors}M / ${rv.minors}m)`);
+        if (rv.reviewCommentUrl) lines.push(`  Review Comment → ${rv.reviewCommentUrl}`);
+      }
+      break;
+
+    case 'documentation':
+      if (output.frdUrl)           lines.push(`  FRD              → ${output.frdUrl}`);
+      if (output.architectureUrl)  lines.push(`  Architecture     → ${output.architectureUrl}`);
+      if (output.hldUrl)           lines.push(`  HLD              → ${output.hldUrl}`);
+      if (output.lldUrl)           lines.push(`  LLD              → ${output.lldUrl}`);
+      if (output.wireframesUrl)    lines.push(`  Wireframes       → ${output.wireframesUrl}`);
+      if (output.readmeUrl)        lines.push(`  README.md        → ${output.readmeUrl}`);
       break;
 
     case 'testing':
@@ -272,6 +286,7 @@ class Orchestrator {
       app_analysis:         require('./phases/app_analysis'),
       design:               require('./phases/design'),
       development:          require('./phases/development'),
+      documentation:        require('./phases/documentation'),
       testing:              require('./phases/testing'),
       deployment:           require('./phases/deployment'),
       maintenance:          require('./phases/maintenance'),
