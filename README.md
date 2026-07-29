@@ -66,22 +66,44 @@ npx playwright test
 npx playwright show-report   # view HTML report
 ```
 
-## Run SDLC Workflow
+## Run SDLC Pipeline
 
-Each phase can be triggered individually after the previous HITL gate is approved:
+### Interactive Mode
+Pauses after each phase and waits for your approval before continuing.
+At each gate you will see the Jira / Confluence / GitHub links created, then a prompt:
 
-```bash
-node workflow/phases/analysis.js      # BA: create JIRA EPICs/Stories/Tasks
-node workflow/phases/plan.js          # Planner: sprint plan + JIRA updates
-node workflow/phases/design.js        # Architect: publish to Confluence
-node workflow/phases/documentation.js # Tech Writer: README + FRD
-node workflow/phases/build.js         # DevOps: build artifact
+```powershell
+# Run all 7 phases from the beginning
+node workflow/orchestrator.js
+
+# Resume from a specific phase (skips completed ones)
+node workflow/orchestrator.js testing
 ```
 
-Or run the full pipeline from any phase:
-```bash
-node workflow/orchestrator.js [analysis|plan|design|development|documentation|build]
+When the prompt appears, type one of:
+- `approve` — proceed to the next phase
+- `reject <feedback>` — re-run the current phase with your feedback
+
+### Pipeline Mode (Auto-Approve)
+Runs all phases unattended — no HITL gates. Useful for CI/CD or smoke tests.
+
+```powershell
+# Windows PowerShell
+$env:HITL_AUTO_APPROVE="true"; node workflow/orchestrator.js
+
+# Resume from a specific phase
+$env:HITL_AUTO_APPROVE="true"; node workflow/orchestrator.js testing
+
+# Clear the flag when done
+Remove-Item Env:HITL_AUTO_APPROVE
 ```
+
+### Valid Phase Names
+`requirement_analysis` · `app_analysis` · `design` · `development` · `testing` · `deployment` · `maintenance`
+
+### Pipeline Output
+After every run, `RunDetails.md` is generated at the project root with a full report:
+phase-by-phase status, all Jira / Confluence / GitHub links, test results, and the live deployment URL.
 
 ## Project Structure
 
