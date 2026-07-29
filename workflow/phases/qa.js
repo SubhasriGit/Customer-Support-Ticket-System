@@ -1,5 +1,5 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
-const { execSync, spawn } = require('child_process');
+const { execSync, spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -13,6 +13,39 @@ const fs = require('fs');
 const ROOT    = path.join(__dirname, '../..');
 const BACKEND = path.join(ROOT, 'backend');
 const TESTS   = path.join(ROOT, 'tests');
+
+const CUCUMBER_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+// Streams Cucumber output to the terminal in real-time while also capturing it.
+function runCucumber(cwd, timeoutMs = CUCUMBER_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('npx', ['cucumber-js', '--config', 'cucumber.js'], {
+      cwd,
+      shell: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let output = '';
+
+    const timer = setTimeout(() => {
+      proc.kill();
+      reject(new Error(`Cucumber timed out after ${timeoutMs / 60000} minutes`));
+    }, timeoutMs);
+
+    proc.stdout.on('data', chunk => { output += chunk; process.stdout.write(chunk); });
+    proc.stderr.on('data', chunk => { output += chunk; process.stderr.write(chunk); });
+
+    proc.on('close', code => {
+      clearTimeout(timer);
+      resolve({ output, exitCode: code || 0 });
+    });
+
+    proc.on('error', err => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
 
 function waitForPort(port, maxMs = 30000) {
   const start = Date.now();
@@ -56,20 +89,12 @@ async function run({ feedback } = {}) {
   try {
     // ── 2. Run Cucumber BDD tests ───────────────────────────────────────────
     console.log('\n[qa] Step 2/3 — Running Cucumber BDD tests...');
-    let output = '';
-    let exitCode = 0;
-    try {
-      output = execSync('npx cucumber-js --config cucumber.js', {
-        cwd: TESTS,
-        encoding: 'utf8',
-        stdio: 'pipe',
-      });
-    } catch (err) {
-      output = (err.stdout || '') + (err.stderr || '');
-      exitCode = err.status || 1;
-    }
 
-    console.log(output);
+    const { output, exitCode } = await runCucumber(TESTS);
+
+    console.log('\n[qa] --- Cucumber output ---');
+    console.log(output.trim());
+    console.log('[qa] --- end ---\n');
 
     // Generate HTML report from Cucumber JSON
     try {

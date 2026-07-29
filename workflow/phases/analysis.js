@@ -1,33 +1,21 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const https = require('https');
-const fs    = require('fs');
 const path  = require('path');
+const { getRequirementsText } = require('../integrations/confluence-requirements');
 
 /**
  * Requirement Analysis Phase Agent (BA Persona)
  *
- * Reads plain-English requirements from:
- *   requirements/requirements.txt
- *
- * Parses the structured sections (EPIC / STORY / TASK) and creates
- * the corresponding JIRA hierarchy: Epic → Story → Subtask.
- *
- * Requirements file format:
- *   EPIC: <title>
- *   Description: <text>
- *
- *     STORY: <title>
- *     Description: <text>
- *       TASK: <title>
- *       TASK: <title>
+ * Reads plain-English requirements from the Confluence page whose URL
+ * is stored in requirements/Enhancement.txt, then parses the structured
+ * sections (EPIC / STORY / TASK) and creates the corresponding JIRA
+ * hierarchy: Epic → Story → Subtask.
  */
 
 const JIRA_BASE   = process.env.JIRA_BASE_URL;
 const JIRA_EMAIL  = process.env.JIRA_EMAIL;
 const JIRA_TOKEN  = process.env.JIRA_API_TOKEN;
 const PROJECT_KEY = process.env.JIRA_PROJECT_KEY;
-
-const REQUIREMENTS_FILE = path.join(__dirname, '../../requirements/requirements.txt');
 
 // ── JIRA helper ────────────────────────────────────────────────────────────────
 function jiraRequest(method, urlPath, body = null) {
@@ -83,7 +71,7 @@ async function createJiraIssue({ summary, description, issueType, parentKey = nu
 
 // ── Requirements parser ────────────────────────────────────────────────────────
 /**
- * Parses requirements.txt into a structured array:
+ * Parses a requirements text string into a structured array:
  * [
  *   {
  *     epic: 'Title',
@@ -94,9 +82,8 @@ async function createJiraIssue({ summary, description, issueType, parentKey = nu
  *   }
  * ]
  */
-function parseRequirements(filePath) {
-  const raw   = fs.readFileSync(filePath, 'utf8');
-  const lines = raw.split(/\r?\n/);
+function parseRequirements(text) {
+  const lines = text.split(/\r?\n/);
 
   const epics   = [];
   let curEpic   = null;
@@ -175,14 +162,10 @@ async function run({ feedback } = {}) {
   console.log('[analysis] BA Agent starting...');
   if (feedback) console.log(`[analysis] Incorporating feedback: ${feedback}`);
 
-  // Read and parse requirements
-  if (!fs.existsSync(REQUIREMENTS_FILE)) {
-    throw new Error(`Requirements file not found: ${REQUIREMENTS_FILE}`);
-  }
-
-  console.log(`[analysis] Reading requirements from: ${REQUIREMENTS_FILE}`);
-  const enhancements = parseRequirements(REQUIREMENTS_FILE);
-  console.log(`[analysis] Parsed ${enhancements.length} epic(s) from requirements.txt`);
+  // Read requirements from Confluence (URL stored in requirements/Enhancement.txt)
+  const requirementsText = await getRequirementsText();
+  const enhancements = parseRequirements(requirementsText);
+  console.log(`[analysis] Parsed ${enhancements.length} epic(s) from Confluence requirements page`);
 
   const output = { epics: [], stories: [], tasks: [] };
 

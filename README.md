@@ -1,11 +1,11 @@
-# Customer Support Ticket System
+# Customer Support Ticket System (CSTS) ([PR #18](https://github.com/SubhasriGit/Customer-Support-Ticket-System/pull/18))
 
 AI-Enhanced Customer Support platform built as part of the **mm-learning-group-1 capstone** — demonstrating AI-driven SDLC orchestration with CodeMie assistants, HITL gates, and self-healing automation.
 
 ## Features
 
 | Feature | Sprint | Status |
-|---------|--------|--------|
+|---|---|---|
 | Submit and track support tickets | Base | ✅ |
 | AI-powered ticket triage (category + priority) | Sprint 1 | ✅ |
 | Priority and severity scoring with badges | Sprint 1 | ✅ |
@@ -19,30 +19,40 @@ AI-Enhanced Customer Support platform built as part of the **mm-learning-group-1
 |---|---|
 | Frontend | React 18 |
 | Backend | Node.js 24 / Express 4 |
-| Database | SQLite via `node:sqlite` (built-in, no native compilation) |
+| Database | SQLite via `node:sqlite` (built-in — no native compilation) |
+| AI | Claude API (Anthropic SDK) |
 | Testing | Playwright with self-healing selectors |
-| Build | npm scripts |
-| AI | Claude API (via CodeMie MCP) with keyword fallback |
+| CI/CD | GitHub Actions |
 
 ## Prerequisites
 
-- Node.js >= 22.5 (uses built-in `node:sqlite`)
-- npm >= 9
+- Node.js >= 24
+- npm >= 10
 
 ## Setup
 
 ```bash
-# 1. Clone and configure environment
-cp .env.example .env
-# Edit .env and fill in: JIRA_API_TOKEN, GITHUB_PAT, CONFLUENCE_SPACE_KEY, ANTHROPIC_API_KEY
-
-# 2. Install pre-commit hook (blocks hardcoded secrets)
-npm run setup:hooks
-
-# 3. Install dependencies
+git clone https://github.com/SubhasriGit/Customer-Support-Ticket-System.git
+cd Customer-Support-Ticket-System
+cp .env.example .env   # fill in credentials
+npm run setup:hooks    # install pre-commit secret-detection hook
 cd backend && npm install && cd ..
 cd frontend && npm install && cd ..
 ```
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `GITHUB_PAT` | GitHub personal access token |
+| `JIRA_BASE_URL` | Atlassian JIRA base URL |
+| `JIRA_EMAIL` | Atlassian account email |
+| `JIRA_API_TOKEN` | JIRA API token |
+| `CONFLUENCE_BASE_URL` | Confluence base URL |
+| `CONFLUENCE_SPACE_KEY` | Confluence space key |
+| `GITLAB_PAT` | GitLab personal access token |
+| `GITLAB_PROJECT_ID` | GitLab project ID |
+| `PORT` | Backend port (default: 3001) |
 
 ## Run
 
@@ -59,66 +69,63 @@ Open http://localhost:3000
 ## Run Tests
 
 ```bash
-cd tests
-npm install
+cd tests && npm install
 npx playwright install chromium
 npx playwright test
-npx playwright show-report   # view HTML report
+npx playwright show-report
 ```
 
-## Run SDLC Workflow
-
-Each phase can be triggered individually after the previous HITL gate is approved:
+## SDLC Pipeline
 
 ```bash
-node workflow/phases/analysis.js      # BA: create JIRA EPICs/Stories/Tasks
-node workflow/phases/plan.js          # Planner: sprint plan + JIRA updates
-node workflow/phases/design.js        # Architect: publish to Confluence
-node workflow/phases/documentation.js # Tech Writer: README + FRD
-node workflow/phases/build.js         # DevOps: build artifact
+# Full 8-phase pipeline
+npm run workflow
+
+# Start from a specific phase
+node workflow/orchestrator.js development
+
+# Single phase
+node workflow/orchestrator.js documentation
 ```
 
-Or run the full pipeline from any phase:
-```bash
-node workflow/orchestrator.js [analysis|plan|design|development|documentation|build]
-```
+Set `HITL_AUTO_APPROVE=true` to bypass all human-in-the-loop gates.
+
+## API Reference
+
+| Method | Path | Description |
+|---|---|---|
+| GET | /api/tickets | List all tickets |
+| POST | /api/tickets | Create ticket + AI triage |
+| PATCH | /api/tickets/:id/status | Toggle open / closed |
+| GET | /api/tickets/:id/suggest-reply | AI reply suggestion |
+| PATCH | /api/tickets/:id/response | Save agent response |
+| GET | /api/analytics | Dashboard metrics |
+| GET | /health | Health check |
 
 ## Project Structure
 
 ```
-├── frontend/                  React 18 application
-│   └── src/
-│       ├── components/        TicketForm, TicketList, Dashboard, SuggestedReply
-│       └── services/api.js    REST client
-├── backend/                   Express 4 API
-│   ├── db/
-│   │   ├── database.js        Migration runner (node:sqlite)
-│   │   └── migrations/        001-004 versioned SQL migrations
-│   ├── routes/                tickets, analytics, suggestions
-│   └── services/              triageService (Claude API + keyword fallback)
-├── workflow/                  AI-driven SDLC pipeline
-│   ├── phases/                analysis, plan, design, development, documentation, build
-│   ├── hooks/                 pre-phase, post-phase, on-failure (retry + backoff)
-│   ├── hitl/                  GitHub PR-based HITL reviewer
-│   └── self-healing/          Playwright selector healer
-├── tests/
-│   └── specs/tickets.spec.js  Playwright E2E with resilient locators
-├── scripts/setup-hooks.js     Cross-platform pre-commit hook installer
-└── .github/hooks/pre-commit   Secret detection hook
+├── frontend/src/              React 18 application
+├── backend/
+│   ├── routes/tickets.js      Ticket CRUD + AI routes
+│   ├── db/database.js         SQLite connection
+│   └── services/ai.js         Claude API integration
+├── tests/e2e/                 Playwright specs
+├── workflow/
+│   ├── orchestrator.js        SDLC pipeline orchestrator
+│   ├── phases/                Per-phase agent runners
+│   ├── hitl/                  Human-in-the-loop reviewer
+│   ├── integrations/          GitHub, GitLab, code-review helpers
+│   └── report/                RunDetails generator
+└── .claude/agents/            CodeMie agent definitions
 ```
 
 ## Security
 
-- The pre-commit hook blocks any hardcoded API keys, tokens, or passwords before commit.
-- All credentials are stored in `.env` (gitignored). Never commit the `.env` file.
-- The `.env.example` file contains only placeholder values and is safe to commit.
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Run the SDLC pipeline agents for analysis and planning
-3. Submit a PR — the HITL reviewer will request human approval before merge
+- The pre-commit hook blocks hardcoded API keys before commit.
+- All credentials are stored in `.env` (gitignored).
+- Never commit the `.env` file.
 
 ---
 
-*Generated by AI Tech Writer Agent — SDLC Phase 5 (Documentation) | mm-learning-group-1*
+*Generated by CSTS Documentation Agent — AI-Driven SDLC Pipeline | mm-learning-group-1*

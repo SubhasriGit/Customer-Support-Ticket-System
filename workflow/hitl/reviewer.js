@@ -69,13 +69,20 @@ async function addPRComment(prNumber, comment) {
 }
 
 async function waitForPRApproval(prNumber, pollIntervalMs = 15000, timeoutMs = 3600000) {
-  console.log(`[HITL] Waiting for PR #${prNumber} approval...`);
-  console.log(`[HITL] Type "approve" or "reject [feedback]" here, OR approve on GitHub — whichever comes first.`);
+  if (process.env.HITL_AUTO_APPROVE === 'true') {
+    console.log(`[HITL] AUTO_APPROVE enabled — skipping PR #${prNumber} review gate.`);
+    return { decision: 'approved', prNumber };
+  }
+
+  console.log(`[HITL] PR #${prNumber} created. Approve on GitHub OR type "approve" / "reject <feedback>" here.`);
+  console.log(`[HITL] (Polling GitHub every ${Math.round(pollIntervalMs / 1000)}s for automatic detection.)`);
 
   const readline = require('readline');
   let stdinDecision = null;
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  rl.setPrompt('[HITL:PR] > ');
+  rl.prompt();
   rl.on('line', (line) => {
     const trimmed = line.trim().toLowerCase();
     if (trimmed === 'approve' || trimmed === 'approved') {
@@ -83,6 +90,9 @@ async function waitForPRApproval(prNumber, pollIntervalMs = 15000, timeoutMs = 3
     } else if (trimmed.startsWith('reject') || trimmed.startsWith('changes')) {
       const feedback = line.replace(/^(reject|changes[_\s]?requested):?\s*/i, '').trim();
       stdinDecision = { decision: 'changes_requested', feedback, prNumber };
+    } else if (trimmed) {
+      console.log(`[HITL] Unrecognised input. Type "approve" or "reject <feedback>".`);
+      rl.prompt();
     }
   });
 
@@ -117,6 +127,11 @@ async function waitForPRApproval(prNumber, pollIntervalMs = 15000, timeoutMs = 3
 }
 
 async function waitForStdinApproval(phaseName, summary = '') {
+  if (process.env.HITL_AUTO_APPROVE === 'true') {
+    console.log(`[HITL:${phaseName}] AUTO_APPROVE enabled — skipping interactive gate.`);
+    return { decision: 'approved' };
+  }
+
   console.log(`\n${'─'.repeat(60)}`);
   console.log(`[HITL:${phaseName}] Phase complete — review the output above.`);
   if (summary) console.log(`[HITL:${phaseName}] Output summary:\n${summary}`);
@@ -124,25 +139,26 @@ async function waitForStdinApproval(phaseName, summary = '') {
   console.log('─'.repeat(60));
 
   const readline = require('readline');
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
 
-  return new Promise((resolve) => {
-    rl.on('line', (line) => {
-      const trimmed = line.trim().toLowerCase();
-      if (trimmed === 'approve' || trimmed === 'approved') {
-        rl.close();
-        console.log(`[HITL:${phaseName}] Approved — proceeding to next phase.`);
-        resolve({ decision: 'approved' });
-      } else if (trimmed.startsWith('reject') || trimmed.startsWith('changes')) {
-        const feedback = line.replace(/^(reject|changes[_\s]?requested):?\s*/i, '').trim();
-        rl.close();
-        console.log(`[HITL:${phaseName}] Changes requested — re-running phase with feedback.`);
-        resolve({ decision: 'changes_requested', feedback });
-      } else {
-        console.log(`[HITL:${phaseName}] Unrecognised input. Type "approve" or "reject <feedback>".`);
-      }
+  // Use rl.question() — reliable on all platforms including Windows PowerShell.
+  // Loops until a recognised command is entered.
+  while (true) {
+    const line = await new Promise(resolve => {
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      rl.question(`[HITL:${phaseName}] > `, answer => { rl.close(); resolve(answer); });
     });
-  });
+    const trimmed = line.trim().toLowerCase();
+    if (trimmed === 'approve' || trimmed === 'approved') {
+      console.log(`[HITL:${phaseName}] Approved — proceeding to next phase.`);
+      return { decision: 'approved' };
+    } else if (trimmed.startsWith('reject') || trimmed.startsWith('changes')) {
+      const feedback = line.replace(/^(reject|changes[_\s]?requested):?\s*/i, '').trim();
+      console.log(`[HITL:${phaseName}] Changes requested — re-running phase with feedback.`);
+      return { decision: 'changes_requested', feedback };
+    } else {
+      console.log(`[HITL:${phaseName}] Unrecognised input. Type "approve" or "reject <feedback>".`);
+    }
+  }
 }
 
 module.exports = { createPR, getPRStatus, getPRReviews, addPRComment, waitForPRApproval, waitForStdinApproval };

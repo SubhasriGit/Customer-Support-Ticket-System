@@ -17,6 +17,13 @@
         "ATLASSIAN_API_TOKEN": "${ATLASSIAN_API_TOKEN}"
       }
     },
+    "gitlab": {
+      "type": "http",
+      "url": "${GITLAB_BASE_URL}/api/v4/mcp",
+      "headers": {
+        "PRIVATE-TOKEN": "${GITLAB_PAT}"
+      }
+    },
     "playwright": {
       "type": "stdio",
       "command": "npx",

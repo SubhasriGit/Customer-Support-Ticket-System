@@ -74,7 +74,7 @@ async function findConfluencePage(title) {
   return null;
 }
 
-async function run({ feedback } = {}) {
+async function run({ feedback, state } = {}) {
   console.log('[maintenance] Maintenance Phase Agent starting...');
   if (feedback) console.log(`[maintenance] Incorporating feedback: ${feedback}`);
 
@@ -174,8 +174,12 @@ async function run({ feedback } = {}) {
     healthStatus = 'unreachable';
   }
 
-  const localUrl  = `http://localhost:${process.env.PORT || '3001'}`;
-  const renderUrl = process.env.RENDER_URL;
+  const localUrl = `http://localhost:${process.env.PORT || '3001'}`;
+  // Prefer deploy URL produced by the build phase during this run; fall back to env var
+  const renderUrl = state?.phaseOutputs?.deployment?.deployUrl
+                 || state?.phaseOutputs?.build?.deployUrl
+                 || process.env.RENDER_URL
+                 || null;
 
   console.log('\n[maintenance] ─────────────────────────────────────────');
   console.log('[maintenance] MAINTENANCE PHASE COMPLETE');
@@ -184,7 +188,7 @@ async function run({ feedback } = {}) {
   console.log(`[maintenance]   Health status : ${healthStatus}`);
   console.log(`[maintenance]   Local URL     : ${localUrl}`);
   if (renderUrl)  console.log(`[maintenance]   Production    : ${renderUrl}`);
-  else            console.log(`[maintenance]   Production    : (deploy to Render.com and set RENDER_URL in .env)`);
+  else            console.log(`[maintenance]   Production    : (set RENDER_API_KEY + RENDER_SERVICE_ID in .env to enable auto-deploy)`);
   console.log('[maintenance] Pipeline fully complete. System is live and monitored.');
   console.log('[maintenance] ─────────────────────────────────────────');
 

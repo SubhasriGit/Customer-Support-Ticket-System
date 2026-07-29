@@ -8,3 +8,4 @@ build/
 coverage/
 playwright-report/
 test-results/
+RunDetails*.md
