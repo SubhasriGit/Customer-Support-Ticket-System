@@ -6,7 +6,7 @@ This PR implements the completed Customer Support Ticket System end to end, cove
 - Functional Requirements: FR-1 through FR-14 (registered member auth, profile, book create/search/update/delete, borrow/return, loan listing, overdue flag, members list)
 - Non-Functional Requirements: NFR-1 through NFR-9 (security, authorization, validation, error handling, observability, configuration, performance, accessibility, testability)
 
-## Contract Changes
+## Contract Changes :::
 The OpenAPI contract was frozen in `docs/architecture.md`. All generated code and API clients match the contract with zero drift; no further schema changes were required.
 
 ## Migrations
