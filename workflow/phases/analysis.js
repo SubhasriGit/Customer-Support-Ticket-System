@@ -84,76 +84,58 @@ async function createJiraIssue({ summary, description, issueType, parentKey = nu
  */
 function parseRequirements(text) {
   const lines = text.split(/\r?\n/);
+  const epics = [];
+  let curEpic = null;
+  let curStory = null;
+  let steps = [];
 
-  const epics   = [];
-  let curEpic   = null;
-  let curStory  = null;
-  let descBuf   = [];         // accumulates Description: continuation lines
-  let descTarget = null;      // 'epic' | 'story' | null
-
-  function flushDesc() {
-    if (!descTarget || descBuf.length === 0) return;
-    const text = descBuf.join(' ').replace(/\s+/g, ' ').trim();
-    if (descTarget === 'epic'  && curEpic)  curEpic.description  = text;
-    if (descTarget === 'story' && curStory) curStory.description = text;
-    descBuf    = [];
-    descTarget = null;
-  }
-
+  // Group by numbered features as epics
   for (const raw of lines) {
     const line = raw.trim();
-
-    // Skip header / separator / blank lines that are not part of a description
-    if (!line || line.startsWith('=') || line.startsWith('Project') ||
-        line.startsWith('Version') || line.startsWith('Author') ||
-        line.startsWith('Purpose') || line.startsWith('CUSTOMER')) {
-      flushDesc();
-      continue;
-    }
-
-    // EPIC:
-    if (/^EPIC:/i.test(line)) {
-      flushDesc();
-      curEpic  = { epic: line.replace(/^EPIC:\s*/i, '').trim(), description: '', stories: [] };
+    // Epic heading: numbered list
+    const epicMatch = line.match(/^\d+\.\s*(.+?)(?:\s*\(.+\))?$/);
+    if (epicMatch) {
+      // Flush previous story
+      if (curStory && curEpic) {
+        curStory.tasks = steps.slice();
+        curEpic.stories.push(curStory);
+      }
+      // Flush previous epic
+      if (curEpic) {
+        epics.push(curEpic);
+      }
+      // Start new epic
+      curEpic = { epic: epicMatch[1].trim(), description: '', stories: [] };
       curStory = null;
-      epics.push(curEpic);
-      descTarget = null;
+      steps = [];
       continue;
     }
-
-    // STORY:
-    if (/^STORY:/i.test(line)) {
-      flushDesc();
-      curStory = { summary: line.replace(/^STORY:\s*/i, '').trim(), description: '', tasks: [] };
-      if (curEpic) curEpic.stories.push(curStory);
-      descTarget = null;
+    // Story from Gherkin Scenario
+    const storyMatch = line.match(/^Scenario(?: Outline)?:\s*(.+)$/i);
+    if (storyMatch && curEpic) {
+      // Flush previous story
+      if (curStory) {
+        curStory.tasks = steps.slice();
+        curEpic.stories.push(curStory);
+      }
+      curStory = { summary: storyMatch[1].trim(), description: '', tasks: [] };
+      steps = [];
       continue;
     }
-
-    // TASK:
-    if (/^TASK:/i.test(line)) {
-      flushDesc();
-      const taskTitle = line.replace(/^TASK:\s*/i, '').trim();
-      if (curStory) curStory.tasks.push(taskTitle);
-      continue;
-    }
-
-    // Description: (first line)
-    if (/^Description:/i.test(line)) {
-      flushDesc();
-      descTarget = curStory ? 'story' : (curEpic ? 'epic' : null);
-      descBuf.push(line.replace(/^Description:\s*/i, '').trim());
-      continue;
-    }
-
-    // Continuation of a description block (indented or plain text after Description:)
-    if (descTarget) {
-      descBuf.push(line);
+    // Task: Given/When/Then/And lines
+    if (curStory && /^(Given|When|Then|And)\b/i.test(line)) {
+      steps.push(line);
       continue;
     }
   }
-
-  flushDesc();
+  // Flush last story and epic
+  if (curStory && curEpic) {
+    curStory.tasks = steps.slice();
+    curEpic.stories.push(curStory);
+  }
+  if (curEpic) {
+    epics.push(curEpic);
+  }
   return epics;
 }
 

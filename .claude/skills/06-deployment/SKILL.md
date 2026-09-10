@@ -1,3 +1,8 @@
+---
+name: 06-deployment
+description: Run CSTS pipeline Phase 6 — Deployment. Publishes documentation to Confluence and README to GitHub, then builds and packages the production artifact into dist/. Triggers on: "run deployment phase", "start phase 6", "build production artifact", "package the app", "prepare for Render deployment".
+---
+
 # Skill: Run Deployment Phase
 
 ## When to Use
@@ -61,6 +66,42 @@ NODE_ENV=production node dist/server/server.js
 
 ### Step 6 — HITL
 Type `approve` to advance to Maintenance.
+
+---
+
+## Tech Writer Sub-Module (documentation.js)
+Performs these steps in order:
+1. Write `README.md` to repo root
+2. Upsert `"CSTS — Functional Requirements Document ({date})"` to Confluence
+3. Upsert `"CSTS — API Documentation ({date})"` to Confluence
+
+---
+
+## DevOps Sub-Module (build.js)
+Performs these steps in order:
+1. `npm install --legacy-peer-deps` + `npm run build` in `frontend/`
+2. `npm install` in `backend/`
+3. Copy `frontend/build/` → `dist/public/`
+4. Copy `backend/` (excluding `node_modules`, `.env`, `*.sqlite`) → `dist/server/`
+5. `npm install --production` in `dist/server/`
+6. Verify: `dist/public/index.html`, `dist/server/server.js`, `dist/server/db/database.js` exist
+7. Smoke test: `node -e "process.env.PORT=0; require('./server')"` from `dist/server/`
+
+---
+
+## Confluence Upsert Pattern
+```
+GET /rest/api/content?title={encoded}&spaceKey={CONFLUENCE_SPACE_KEY}&expand=version
+→ exists: PUT /rest/api/content/{id}  (body: version.number + 1)
+→ new:    POST /rest/api/content
+```
+All pages use `storage` representation.
+
+---
+
+## HITL Checkpoint
+After both sub-modules complete, state:
+> "HITL REVIEW REQUIRED — Docs published, artifact built. Start with `NODE_ENV=production node dist/server/server.js` to verify locally. Approve to proceed to Maintenance."
 
 ---
 

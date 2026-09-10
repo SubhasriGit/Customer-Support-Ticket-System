@@ -1,25 +1,28 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const https = require('https');
-const fs    = require('fs');
-const path  = require('path');
+const fs = require('fs');
+const path = require('path');
 
-const CONF_BASE  = (process.env.CONFLUENCE_BASE_URL || '').replace(/\/$/, '');
-const JIRA_EMAIL = process.env.JIRA_EMAIL;
-const JIRA_TOKEN = process.env.JIRA_API_TOKEN;
+// Base Confluence URL (no trailing slash)
+const CONF_BASE = (process.env.CONFLUENCE_BASE_URL || '').replace(/\/$/, '');
+// Credentials for Confluence API
+const CONFLUENCE_EMAIL = process.env.CONFLUENCE_EMAIL || process.env.JIRA_EMAIL;
+const CONFLUENCE_API_TOKEN = process.env.CONFLUENCE_API_TOKEN || process.env.ATLASSIAN_API_TOKEN;
 
+// File containing the Confluence page URL
 const ENHANCEMENT_FILE = path.join(__dirname, '../../requirements/Enhancement.txt');
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
+// Extract numeric page ID from a Confluence URL
 function extractPageIdFromUrl(url) {
-  const m = url.match(/\/pages\/(\d+)/);
-  if (!m) throw new Error(`Cannot extract page ID from Confluence URL: ${url}`);
-  return m[1];
+  const match = url.match(/\/pages\/(\d+)/);
+  if (!match) throw new Error(`Cannot extract page ID from URL: ${url}`);
+  return match[1];
 }
 
-function stripHtml(storageHtml) {
-  return storageHtml
-    .replace(/<br\s*\/?>/gi, '\n')
+// Strip Confluence storage-format HTML down to plain text
+function stripHtml(html) {
+  return html
+    .replace(/<br\s*\/?>>?/gi, '\n')
     .replace(/<\/p>/gi, '\n')
     .replace(/<\/h[1-6]>/gi, '\n')
     .replace(/<\/li>/gi, '\n')
@@ -33,76 +36,65 @@ function stripHtml(storageHtml) {
     .replace(/&nbsp;/g, ' ')
     .replace(/&quot;/g, '"')
     .replace(/&#\d+;/g, '')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\n{2,}/g, '\n\n')
     .trim();
 }
 
-async function fetchPageContent(pageId) {
+// Fetch Confluence page storage HTML via REST API
+async function fetchPageStorage(pageId) {
   return new Promise((resolve, reject) => {
-    const auth    = Buffer.from(`${JIRA_EMAIL}:${JIRA_TOKEN}`).toString('base64');
-    const urlPath = `/rest/api/content/${pageId}?expand=body.storage`;
-    const url     = new URL(CONF_BASE + urlPath);
+    const auth = Buffer.from(`${CONFLUENCE_EMAIL}:${CONFLUENCE_API_TOKEN}`).toString('base64');
+    const apiPath = `/wiki/rest/api/content/${pageId}?expand=body.storage`;
+    const url = new URL(CONF_BASE + apiPath);
 
-    const req = https.request({
-      hostname: url.hostname,
-      path:     url.pathname + url.search,
-      method:   'GET',
-      headers: {
-        Authorization:  `Basic ${auth}`,
-        'Content-Type': 'application/json',
-        Accept:         'application/json',
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${auth}`,
+          Accept: 'application/json'
+        }
       },
-    }, (res) => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch { resolve({ status: res.statusCode, body: data }); }
-      });
-    });
+      res => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            return reject(new Error(`Confluence API returned status ${res.statusCode}`));
+          }
+          let parsed;
+          try { parsed = JSON.parse(data); } catch (e) { return reject(new Error(`Invalid JSON from Confluence: ${e.message}`)); }
+          const storage = parsed.body?.storage?.value;
+          if (typeof storage !== 'string') {
+            return reject(new Error(`No storage.value field in response for page ${pageId}`));
+          }
+          resolve(storage);
+        });
+      }
+    );
     req.on('error', reject);
     req.end();
   });
 }
 
-// ── Public API ─────────────────────────────────────────────────────────────────
-
-/**
- * Reads the Confluence requirements page URL from Enhancement.txt,
- * fetches the page content via the Confluence REST API, and returns
- * the body as plain text ready for EPIC/STORY/TASK parsing.
- *
- * Enhancement.txt format (first URL found on any line is used):
- *   Confluence requirement enhancement link: https://<site>/wiki/spaces/.../pages/<pageId>/...
- */
+// Public API: read file, fetch page, return plain-text
 async function getRequirementsText() {
   if (!fs.existsSync(ENHANCEMENT_FILE)) {
-    throw new Error(`Enhancement.txt not found: ${ENHANCEMENT_FILE}`);
+    throw new Error(`Enhancement.txt not found at ${ENHANCEMENT_FILE}`);
   }
-
-  const enhancementTxt = fs.readFileSync(ENHANCEMENT_FILE, 'utf8').trim();
-  const urlMatch = enhancementTxt.match(/https?:\/\/[^\s]+/);
-  if (!urlMatch) throw new Error('No Confluence URL found in requirements/Enhancement.txt');
-
-  const confluenceUrl = urlMatch[0];
-  const pageId        = extractPageIdFromUrl(confluenceUrl);
-
+  const fileContent = fs.readFileSync(ENHANCEMENT_FILE, 'utf8');
+  const urlRegex = /https?:\/\/\S+/g;
+  const urls = process.env.CONFLUENCE_PAGE_URL ? [process.env.CONFLUENCE_PAGE_URL] : fileContent.match(urlRegex) || [];
+  if (!urls.length) {
+    throw new Error('No Confluence URL found in Enhancement.txt or via CONFLUENCE_PAGE_URL');
+  }
+  const confluenceUrl = urls[0];
+  const pageId = extractPageIdFromUrl(confluenceUrl);
   console.log(`[confluence-requirements] Fetching requirements from Confluence page ${pageId}`);
-  console.log(`[confluence-requirements] Source: ${confluenceUrl}`);
 
-  const res = await fetchPageContent(pageId);
-  if (res.status !== 200) {
-    throw new Error(`Confluence API returned ${res.status}: ${JSON.stringify(res.body)}`);
-  }
-
-  const storageHtml = res.body?.body?.storage?.value || '';
-  if (!storageHtml) {
-    throw new Error(`Confluence page ${pageId} has no body content`);
-  }
-
-  const pageTitle = res.body.title || pageId;
-  console.log(`[confluence-requirements] Page: "${pageTitle}" (${storageHtml.length} chars of storage content)`);
-
+  const storageHtml = await fetchPageStorage(pageId);
   return stripHtml(storageHtml);
 }
 

@@ -45,7 +45,13 @@ When('I submit the ticket', async function () {
 When('I close the ticket {string}', async function (ticketTitle) {
   const ticket = this.page.locator('[data-testid^="ticket-card-"]').filter({ hasText: ticketTitle });
   await expect(ticket.first()).toBeVisible({ timeout: 10000 });
-  await ticket.first().locator('[data-testid^="toggle-status-"]').click();
+  await Promise.all([
+    this.page.waitForResponse(
+      res => res.url().includes('/api/tickets') && res.status() === 200,
+      { timeout: 10000 }
+    ),
+    ticket.first().locator('[data-testid^="toggle-status-"]').click(),
+  ]);
 });
 
 When('I filter tickets by {string} status', async function (status) {
