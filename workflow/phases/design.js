@@ -42,7 +42,7 @@ function confluenceRequest(method, path, body = null) {
 
 async function findPage(title) {
   const encoded = encodeURIComponent(title);
-  const res = await confluenceRequest('GET', `/rest/api/content?title=${encoded}&spaceKey=${CONF_SPACE}&expand=version`);
+  const res = await confluenceRequest('GET', `/wiki/rest/api/content?title=${encoded}&spaceKey=${CONF_SPACE}&expand=version`);
   if (res.status === 200 && res.body.results?.length > 0) return res.body.results[0];
   return null;
 }
@@ -58,7 +58,7 @@ async function createConfluencePage(title, content, parentId = null) {
       version: { number: nextVersion },
       body: { storage: { value: content, representation: 'storage' } },
     };
-    const res = await confluenceRequest('PUT', `/rest/api/content/${existing.id}`, body);
+    const res = await confluenceRequest('PUT', `/wiki/rest/api/content/${existing.id}`, body);
     if (res.status !== 200) throw new Error(`Confluence page update failed (${res.status}): ${JSON.stringify(res.body)}`);
     const webLink = CONF_BASE + res.body._links?.webui;
     console.log(`[design] Updated: "${title}" (v${nextVersion}) → ${webLink}`);
@@ -73,7 +73,7 @@ async function createConfluencePage(title, content, parentId = null) {
     body: { storage: { value: content, representation: 'storage' } },
     ...(parentId ? { ancestors: [{ id: parentId }] } : {}),
   };
-  const res = await confluenceRequest('POST', '/rest/api/content', body);
+  const res = await confluenceRequest('POST', '/wiki/rest/api/content', body);
   if (res.status !== 200 && res.status !== 201) {
     throw new Error(`Confluence page creation failed (${res.status}): ${JSON.stringify(res.body)}`);
   }
@@ -358,21 +358,21 @@ async function run({ feedback } = {}) {
   if (!CONF_SPACE) throw new Error('CONFLUENCE_SPACE_KEY not set in .env');
 
   const arch = await createConfluencePage(
-    'CSTS — Architecture Document (2026-07-23)',
+    'CSTS — Architecture Document (2026-09-09)',
     ARCHITECTURE_CONTENT
   );
   const hld = await createConfluencePage(
-    'CSTS — High Level Design (2026-07-23)',
+    'CSTS — High Level Design (2026-09-09)',
     HLD_CONTENT,
     arch.id
   );
   const lld = await createConfluencePage(
-    'CSTS — Low Level Design (2026-07-23)',
+    'CSTS — Low Level Design (2026-09-09)',
     LLD_CONTENT,
     arch.id
   );
   const wireframes = await createConfluencePage(
-    'CSTS — Wireframes (2026-07-23)',
+    'CSTS — Wireframes (2026-09-09)',
     WIREFRAMES_CONTENT,
     arch.id
   );

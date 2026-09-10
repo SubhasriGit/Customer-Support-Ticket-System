@@ -1,33 +1,21 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const https = require('https');
-const fs    = require('fs');
 const path  = require('path');
+const { getRequirementsText } = require('../integrations/confluence-requirements');
 
 /**
  * Requirement Analysis Phase Agent (BA Persona)
  *
- * Reads plain-English requirements from:
- *   requirements/requirements.txt
- *
- * Parses the structured sections (EPIC / STORY / TASK) and creates
- * the corresponding JIRA hierarchy: Epic → Story → Subtask.
- *
- * Requirements file format:
- *   EPIC: <title>
- *   Description: <text>
- *
- *     STORY: <title>
- *     Description: <text>
- *       TASK: <title>
- *       TASK: <title>
+ * Reads plain-English requirements from the Confluence page whose URL
+ * is stored in requirements/Enhancement.txt, then parses the structured
+ * sections (EPIC / STORY / TASK) and creates the corresponding JIRA
+ * hierarchy: Epic → Story → Subtask.
  */
 
 const JIRA_BASE   = process.env.JIRA_BASE_URL;
 const JIRA_EMAIL  = process.env.JIRA_EMAIL;
 const JIRA_TOKEN  = process.env.JIRA_API_TOKEN;
 const PROJECT_KEY = process.env.JIRA_PROJECT_KEY;
-
-const REQUIREMENTS_FILE = path.join(__dirname, '../../requirements/requirements.txt');
 
 // ── JIRA helper ────────────────────────────────────────────────────────────────
 function jiraRequest(method, urlPath, body = null) {
@@ -83,7 +71,7 @@ async function createJiraIssue({ summary, description, issueType, parentKey = nu
 
 // ── Requirements parser ────────────────────────────────────────────────────────
 /**
- * Parses requirements.txt into a structured array:
+ * Parses a requirements text string into a structured array:
  * [
  *   {
  *     epic: 'Title',
@@ -94,79 +82,60 @@ async function createJiraIssue({ summary, description, issueType, parentKey = nu
  *   }
  * ]
  */
-function parseRequirements(filePath) {
-  const raw   = fs.readFileSync(filePath, 'utf8');
-  const lines = raw.split(/\r?\n/);
+function parseRequirements(text) {
+  const lines = text.split(/\r?\n/);
+  const epics = [];
+  let curEpic = null;
+  let curStory = null;
+  let steps = [];
 
-  const epics   = [];
-  let curEpic   = null;
-  let curStory  = null;
-  let descBuf   = [];         // accumulates Description: continuation lines
-  let descTarget = null;      // 'epic' | 'story' | null
-
-  function flushDesc() {
-    if (!descTarget || descBuf.length === 0) return;
-    const text = descBuf.join(' ').replace(/\s+/g, ' ').trim();
-    if (descTarget === 'epic'  && curEpic)  curEpic.description  = text;
-    if (descTarget === 'story' && curStory) curStory.description = text;
-    descBuf    = [];
-    descTarget = null;
-  }
-
+  // Group by numbered features as epics
   for (const raw of lines) {
     const line = raw.trim();
-
-    // Skip header / separator / blank lines that are not part of a description
-    if (!line || line.startsWith('=') || line.startsWith('Project') ||
-        line.startsWith('Version') || line.startsWith('Author') ||
-        line.startsWith('Purpose') || line.startsWith('CUSTOMER')) {
-      flushDesc();
-      continue;
-    }
-
-    // EPIC:
-    if (/^EPIC:/i.test(line)) {
-      flushDesc();
-      curEpic  = { epic: line.replace(/^EPIC:\s*/i, '').trim(), description: '', stories: [] };
+    // Epic heading: numbered list
+    const epicMatch = line.match(/^\d+\.\s*(.+?)(?:\s*\(.+\))?$/);
+    if (epicMatch) {
+      // Flush previous story
+      if (curStory && curEpic) {
+        curStory.tasks = steps.slice();
+        curEpic.stories.push(curStory);
+      }
+      // Flush previous epic
+      if (curEpic) {
+        epics.push(curEpic);
+      }
+      // Start new epic
+      curEpic = { epic: epicMatch[1].trim(), description: '', stories: [] };
       curStory = null;
-      epics.push(curEpic);
-      descTarget = null;
+      steps = [];
       continue;
     }
-
-    // STORY:
-    if (/^STORY:/i.test(line)) {
-      flushDesc();
-      curStory = { summary: line.replace(/^STORY:\s*/i, '').trim(), description: '', tasks: [] };
-      if (curEpic) curEpic.stories.push(curStory);
-      descTarget = null;
+    // Story from Gherkin Scenario
+    const storyMatch = line.match(/^Scenario(?: Outline)?:\s*(.+)$/i);
+    if (storyMatch && curEpic) {
+      // Flush previous story
+      if (curStory) {
+        curStory.tasks = steps.slice();
+        curEpic.stories.push(curStory);
+      }
+      curStory = { summary: storyMatch[1].trim(), description: '', tasks: [] };
+      steps = [];
       continue;
     }
-
-    // TASK:
-    if (/^TASK:/i.test(line)) {
-      flushDesc();
-      const taskTitle = line.replace(/^TASK:\s*/i, '').trim();
-      if (curStory) curStory.tasks.push(taskTitle);
-      continue;
-    }
-
-    // Description: (first line)
-    if (/^Description:/i.test(line)) {
-      flushDesc();
-      descTarget = curStory ? 'story' : (curEpic ? 'epic' : null);
-      descBuf.push(line.replace(/^Description:\s*/i, '').trim());
-      continue;
-    }
-
-    // Continuation of a description block (indented or plain text after Description:)
-    if (descTarget) {
-      descBuf.push(line);
+    // Task: Given/When/Then/And lines
+    if (curStory && /^(Given|When|Then|And)\b/i.test(line)) {
+      steps.push(line);
       continue;
     }
   }
-
-  flushDesc();
+  // Flush last story and epic
+  if (curStory && curEpic) {
+    curStory.tasks = steps.slice();
+    curEpic.stories.push(curStory);
+  }
+  if (curEpic) {
+    epics.push(curEpic);
+  }
   return epics;
 }
 
@@ -175,14 +144,10 @@ async function run({ feedback } = {}) {
   console.log('[analysis] BA Agent starting...');
   if (feedback) console.log(`[analysis] Incorporating feedback: ${feedback}`);
 
-  // Read and parse requirements
-  if (!fs.existsSync(REQUIREMENTS_FILE)) {
-    throw new Error(`Requirements file not found: ${REQUIREMENTS_FILE}`);
-  }
-
-  console.log(`[analysis] Reading requirements from: ${REQUIREMENTS_FILE}`);
-  const enhancements = parseRequirements(REQUIREMENTS_FILE);
-  console.log(`[analysis] Parsed ${enhancements.length} epic(s) from requirements.txt`);
+  // Read requirements from Confluence (URL stored in requirements/Enhancement.txt)
+  const requirementsText = await getRequirementsText();
+  const enhancements = parseRequirements(requirementsText);
+  console.log(`[analysis] Parsed ${enhancements.length} epic(s) from Confluence requirements page`);
 
   const output = { epics: [], stories: [], tasks: [] };
 

@@ -1,3 +1,8 @@
+---
+name: 02-app-analysis
+description: Run CSTS pipeline Phase 2 — App Analysis. Fetches JIRA stories from Phase 1, evaluates them against enterprise standards, closes gaps by updating/creating JIRA issues, and publishes a Gap Analysis report to Confluence. Triggers on: "run app analysis", "start phase 2", "review user stories for gaps", "gap analysis on stories".
+---
+
 # Skill: Run App Analysis & Enhancement Phase
 
 ## When to Use
@@ -77,10 +82,15 @@ The phase re-runs incorporating your feedback.
 
 ---
 
-## Key Files
-| File | Purpose |
-|---|---|
-| `workflow/phases/app_analysis.js` | Phase runner — JIRA story review + gap closing + Confluence report |
+## JIRA Story Query
+To fetch all Phase 1 stories:
+```
+GET {JIRA_BASE_URL}/rest/api/3/search
+  ?jql=project=KAN AND issuetype=Story
+  &fields=summary,description,status,subtasks
+```
+
+---
 
 ## JIRA Actions Taken Per Gap Type
 | Gap type | JIRA action |
@@ -89,6 +99,28 @@ The phase re-runs incorporating your feedback.
 | Missing edge case | POST new Subtask under existing story |
 | Missing feature area | POST new Story under the epic |
 | Vague subtask | PUT existing Subtask — update description |
+
+---
+
+## Confluence Upsert Pattern
+```
+GET /rest/api/content?title={encoded}&spaceKey={CONFLUENCE_SPACE_KEY}&expand=version
+→ exists: PUT /rest/api/content/{id}  (body: version.number + 1)
+→ new:    POST /rest/api/content
+```
+
+---
+
+## HITL Checkpoint
+After publishing the report, state:
+> "HITL REVIEW REQUIRED — Reviewed [N] stories, found [N] gaps, [N] stories updated, [N] new stories/subtasks created. Report: {confluenceUrl}. Approve to proceed to Design."
+
+---
+
+## Key Files
+| File | Purpose |
+|---|---|
+| `workflow/phases/app_analysis.js` | Phase runner — JIRA story review + gap closing + Confluence report |
 
 ## Environment Variables Required
 - `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`

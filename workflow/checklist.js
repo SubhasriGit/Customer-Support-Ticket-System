@@ -73,22 +73,23 @@ function apiRequest(url, token, authType = 'Bearer') {
 async function checkRequirements() {
   console.log(BOLD('\n[1] Requirements'));
 
-  const reqFile = path.join(ROOT, 'requirements', 'requirements.txt');
-  if (!fs.existsSync(reqFile)) {
-    record('requirements/requirements.txt exists', false, 'File not found');
+  const enhFile = path.join(ROOT, 'requirements', 'Enhancement.txt');
+  if (!fs.existsSync(enhFile)) {
+    record('requirements/Enhancement.txt exists', false, 'File not found — requirements are sourced from Confluence');
     return;
   }
-  record('requirements/requirements.txt exists', true);
+  record('requirements/Enhancement.txt exists', true);
 
-  const content = fs.readFileSync(reqFile, 'utf8');
-  const epicCount  = (content.match(/^EPIC:/gim)  || []).length;
-  const storyCount = (content.match(/^\s+STORY:/gim) || []).length;
-  const taskCount  = (content.match(/^\s+TASK:/gim)  || []).length;
+  const content    = fs.readFileSync(enhFile, 'utf8').trim();
+  const urlMatch   = content.match(/https?:\/\/[^\s]+/);
+  const pageIdMatch = urlMatch && urlMatch[0].match(/\/pages\/(\d+)/);
 
-  if (epicCount === 0) {
-    record('Requirements contain at least one EPIC', false, 'No EPIC: sections found');
+  if (!urlMatch) {
+    record('Enhancement.txt contains a Confluence URL', false, 'No URL found in file');
+  } else if (!pageIdMatch) {
+    record('Enhancement.txt contains a valid Confluence page URL', false, `URL found but no /pages/<id> segment: ${urlMatch[0]}`);
   } else {
-    record('Requirements contain at least one EPIC', true, `${epicCount} epic(s), ${storyCount} story(ies), ${taskCount} task(s)`);
+    record('Enhancement.txt contains a valid Confluence page URL', true, `Page ID: ${pageIdMatch[1]}`);
   }
 }
 

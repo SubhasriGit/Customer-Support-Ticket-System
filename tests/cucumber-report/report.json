@@ -12,7 +12,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 615822099
+              "duration": 286601300
             },
             "keyword": "Before",
             "hidden": true
@@ -20,7 +20,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 66212399
+              "duration": 49052100
             },
             "arguments": [],
             "keyword": "Given ",
@@ -33,7 +33,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 197772199
+              "duration": 124946899
             },
             "arguments": [],
             "keyword": "When ",
@@ -46,7 +46,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 23011099
+              "duration": 15204700
             },
             "arguments": [],
             "keyword": "And ",
@@ -59,7 +59,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 19719000
+              "duration": 13457000
             },
             "arguments": [],
             "keyword": "And ",
@@ -72,7 +72,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 61655900
+              "duration": 44678499
             },
             "arguments": [],
             "keyword": "And ",
@@ -85,20 +85,20 @@
           {
             "result": {
               "status": "passed",
-              "duration": 28388800
+              "duration": 15598500
             },
             "arguments": [],
             "keyword": "Then ",
             "line": 14,
             "name": "I should see \"Login page broken\" in the ticket list",
             "match": {
-              "location": "steps\\tickets.steps.js:55"
+              "location": "steps\\tickets.steps.js:61"
             }
           },
           {
             "result": {
               "status": "passed",
-              "duration": 107640199
+              "duration": 48844900
             },
             "keyword": "After",
             "hidden": true
@@ -117,7 +117,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 541815900
+              "duration": 230476199
             },
             "keyword": "Before",
             "hidden": true
@@ -125,7 +125,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 79999499
+              "duration": 31367599
             },
             "arguments": [],
             "keyword": "Given ",
@@ -138,7 +138,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 192891899
+              "duration": 116507000
             },
             "arguments": [],
             "keyword": "When ",
@@ -151,7 +151,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 20764599
+              "duration": 14792300
             },
             "arguments": [],
             "keyword": "And ",
@@ -164,7 +164,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 18896400
+              "duration": 10072599
             },
             "arguments": [],
             "keyword": "And ",
@@ -177,7 +177,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 55381899
+              "duration": 46964099
             },
             "arguments": [],
             "keyword": "And ",
@@ -190,7 +190,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 74234899
+              "duration": 54828299
             },
             "arguments": [],
             "keyword": "And ",
@@ -203,20 +203,20 @@
           {
             "result": {
               "status": "passed",
-              "duration": 19351300
+              "duration": 5149799
             },
             "arguments": [],
             "keyword": "Then ",
             "line": 22,
             "name": "the ticket \"Status test ticket\" should show status \"closed\"",
             "match": {
-              "location": "steps\\tickets.steps.js:60"
+              "location": "steps\\tickets.steps.js:66"
             }
           },
           {
             "result": {
               "status": "passed",
-              "duration": 96754199
+              "duration": 48617099
             },
             "keyword": "After",
             "hidden": true
@@ -235,7 +235,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 560437100
+              "duration": 233598700
             },
             "keyword": "Before",
             "hidden": true
@@ -243,7 +243,7 @@
           {
             "result": {
               "status": "passed",
-              "duration": 60080100
+              "duration": 32482500
             },
             "arguments": [],
             "keyword": "Given ",
@@ -256,33 +256,33 @@
           {
             "result": {
               "status": "passed",
-              "duration": 219465100
+              "duration": 156709100
             },
             "arguments": [],
             "keyword": "When ",
             "line": 25,
             "name": "I filter tickets by \"closed\" status",
             "match": {
-              "location": "steps\\tickets.steps.js:51"
+              "location": "steps\\tickets.steps.js:57"
             }
           },
           {
             "result": {
               "status": "passed",
-              "duration": 7616299
+              "duration": 7162600
             },
             "arguments": [],
             "keyword": "Then ",
             "line": 26,
             "name": "I should see no open tickets",
             "match": {
-              "location": "steps\\tickets.steps.js:65"
+              "location": "steps\\tickets.steps.js:71"
             }
           },
           {
             "result": {
               "status": "passed",
-              "duration": 104353299
+              "duration": 54405699
             },
             "keyword": "After",
             "hidden": true

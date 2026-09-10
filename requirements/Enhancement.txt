@@ -1,0 +1,292 @@
+Source: https://subhasree.atlassian.net/wiki/spaces/~712020ff355f343c4d4b9b7cc6aa838aff7b/pages/22249473/Enhancements+for+Customer+Support+Ticket+System
+
+EPIC: Artificial Intelligence and Automation
+Description: Deliver AI-powered triage, smart replies, summarization, self-service deflection, and secure autonomous support actions.
+
+STORY: Automated triage of incoming tickets
+Description: Given a ticket arrives through email, chat, or web form, the AI engine analyzes sentiment, urgency, and core intent, then routes the ticket to the most appropriate specialist queue or agent.
+
+TASK: Implement AI intent and sentiment classification
+Description: Add an AI triage service that extracts sentiment, urgency, and intent from incoming ticket content with a rule-based fallback.
+
+TASK: Route tickets using triage tags
+Description: Map triage results to specialist queues or agents and persist the routing decision with the ticket.
+
+TASK: Add triage audit and failure handling
+Description: Record model latency, confidence, routing results, and fallback usage while returning a safe default when the AI provider is unavailable.
+
+STORY: Smart reply and thread summarization
+Description: Given an agent views an open ticket, the system generates recommended responses from historical resolutions and relevant knowledge articles; agents can also request a concise bulleted summary of long email threads covering key points, actions, and current status.
+
+TASK: Build smart reply generation
+Description: Create a service and agent action that retrieves relevant resolutions and knowledge articles, then generates suggested responses.
+
+TASK: Build conversation summarization
+Description: Summarize extensive ticket history into key points, actions taken, and current status for display in the agent workspace.
+
+TASK: Add reply and summary controls
+Description: Add accessible UI controls, loading states, errors, and data-testid markers for requesting smart replies and summaries.
+
+STORY: Intelligent deflection and self-service suggestions
+Description: While a customer types a support query in the creation form or chat window, dynamically display matching knowledge base articles, FAQs, or forum posts before ticket submission.
+
+TASK: Implement real-time knowledge matching
+Description: Index documentation keywords and expose a low-latency suggestion endpoint for partial customer queries.
+
+TASK: Add inline deflection results
+Description: Render relevant articles, FAQs, and forum posts in the ticket creation and chat experiences with empty and no-match states.
+
+STORY: Autonomous AI support actions
+Description: A chatbot must securely execute approved backend tasks such as order status checks, password resets, and standard refunds at any time without human intervention.
+
+TASK: Define chatbot action contracts
+Description: Specify authenticated APIs, allowed parameters, authorization checks, confirmation requirements, and audit events for each automated action.
+
+TASK: Implement secure action execution
+Description: Integrate chatbot intents with backend order, identity, and refund services while preventing unauthorized or ambiguous requests.
+
+TASK: Add chatbot escalation and audit trail
+Description: Escalate unsupported or high-risk requests to an agent and retain action requests, outcomes, and operator-visible audit records.
+
+EPIC: Omnichannel Communication
+Description: Unify customer interactions across channels and provide embedded, consent-based support experiences.
+
+STORY: Unified customer interaction timeline
+Description: When an agent opens a customer profile, display all Email, Live Chat, WhatsApp, SMS, Social Media, and Voice interactions in one cohesive chronological timeline.
+
+TASK: Define normalized interaction model
+Description: Create a channel-neutral interaction schema with customer, ticket, channel, timestamp, participants, content, and attachment metadata.
+
+TASK: Build channel ingestion and timeline API
+Description: Normalize inbound channel events and expose a paginated chronological timeline endpoint with ordering and filtering.
+
+TASK: Build unified inbox timeline UI
+Description: Add a customer profile timeline that identifies each channel and handles missing, delayed, and failed channel events.
+
+STORY: Secure co-browsing and screen sharing
+Description: When a customer grants consent after an agent initiates a request, allow the agent to securely view or navigate the customer browser session in real time.
+
+TASK: Implement consent and session lifecycle
+Description: Create expiring session invitations, explicit customer consent, revocation, participant authorization, and session audit events.
+
+TASK: Integrate real-time session transport
+Description: Provide secure real-time viewing and navigation using an approved cloud/browser-session provider without storing screen content by default.
+
+TASK: Add co-browsing controls and safeguards
+Description: Add agent and customer controls for start, pause, revoke, and end actions with connection failure and privacy states.
+
+STORY: In-app support widget and SDK
+Description: A user actively using the web or mobile application can open an embedded support widget to raise a ticket or start a chat without navigating to an external help page.
+
+TASK: Define widget and SDK integration contract
+Description: Document initialization, authentication, ticket creation, chat events, theming, localization, and mobile SDK interfaces.
+
+TASK: Build embedded ticket and chat widget
+Description: Implement the support widget with ticket and chat flows, accessible controls, validation, and offline or retry states.
+
+TASK: Add host application security controls
+Description: Enforce origin validation, scoped tokens, content security policy guidance, and tenant isolation for embedded integrations.
+
+EPIC: Collaboration and Workflow Automation
+Description: Improve agent collaboration, automate conditional workflows, and control high-risk actions through approvals.
+
+STORY: Internal swarming and collaboration
+Description: When an agent needs engineering or billing expertise, an internal swarm request dynamically integrates secondary experts into the ticket thread through Slack or Microsoft Teams.
+
+TASK: Implement swarm request workflow
+Description: Add expert selection, ticket context packaging, invitations, participant status, and resolution or cancellation states.
+
+TASK: Integrate Slack and Microsoft Teams
+Description: Send and receive authorized swarm notifications and thread updates through configured Slack and Microsoft Teams integrations.
+
+TASK: Add collaboration permissions and audit
+Description: Restrict ticket context by role and record invitations, messages, participant changes, and external delivery failures.
+
+STORY: Automated macros and conditional workflows
+Description: When a configured condition occurs, automatically execute its action, such as closing a ticket after five inactive days or escalating a P1 ticket by SMS.
+
+TASK: Create workflow rule model and editor
+Description: Support versioned IF-THIS-THEN rules with conditions, actions, schedules, ownership, validation, and enablement controls.
+
+TASK: Build workflow execution service
+Description: Evaluate ticket and system events idempotently, execute matching actions, and retry transient failures without duplicate effects.
+
+TASK: Add workflow monitoring
+Description: Expose execution history, outcomes, failure reasons, and alerts for rules that repeatedly fail or exceed processing limits.
+
+STORY: Multi-tier approval workflows
+Description: When an agent requests a high-value refund, custom discount, or engineering override, route the request to the designated manager for sign-off before execution.
+
+TASK: Implement approval policy configuration
+Description: Define thresholds, designated approvers, escalation timers, delegation, and separation-of-duties rules.
+
+TASK: Build approval request and decision APIs
+Description: Create secure request, approve, reject, expire, and audit operations with idempotent execution after approval.
+
+TASK: Add approval workspace notifications
+Description: Provide agent and manager views for pending decisions, decision history, comments, and notification delivery status.
+
+EPIC: Knowledge Management and Enablement
+Description: Turn resolved support knowledge into maintainable documentation and identify content that needs improvement.
+
+STORY: Generate knowledge articles from resolved tickets
+Description: When an agent converts a successfully resolved ticket with a clear troubleshooting path, generate a draft knowledge article pre-populated with resolution details for review and publishing.
+
+TASK: Extract resolution content
+Description: Identify the problem, diagnosis, steps, outcome, prerequisites, and warnings from a resolved ticket while removing sensitive customer data.
+
+TASK: Build draft article review flow
+Description: Create draft, edit, approve, publish, and reject states with author, reviewer, version, and source-ticket metadata.
+
+TASK: Add convert-to-article UI action
+Description: Add the conversion action to resolved tickets with progress, duplicate detection, permission checks, and failure recovery.
+
+STORY: Detect content gaps and stale articles
+Description: When articles receive low helpfulness ratings or correlate with high search-to-ticket creation rates, flag the content and notify administrators that it needs an update.
+
+TASK: Calculate article quality signals
+Description: Aggregate helpfulness, searches, deflections, ticket creation, age, and usage metrics by article and time period.
+
+TASK: Implement stale-content detection
+Description: Configure thresholds and scheduled analysis to flag outdated or unhelpful content with explainable reasons.
+
+TASK: Add administrator alerts and remediation states
+Description: Notify administrators and track review, update, retirement, and dismissal actions for each content gap.
+
+EPIC: Analytics, Reporting, and Quality Assurance
+Description: Provide real-time operational metrics, post-resolution feedback, and cross-channel sentiment insights.
+
+STORY: Real-time operational dashboard
+Description: Managers and administrators can access a dashboard showing First Response Time, Average Resolution Time, Ticket Backlog, and Agent Utilization with current operational values.
+
+TASK: Define operational metric calculations
+Description: Specify time windows, business hours, filters, aggregation rules, and data quality behavior for FRT, resolution time, backlog, and utilization.
+
+TASK: Build real-time analytics API
+Description: Expose authenticated metric endpoints with efficient queries, refresh metadata, access controls, and error responses.
+
+TASK: Build operational dashboard UI
+Description: Render KPI cards, trend indicators, filters, loading states, stale-data warnings, and accessible numeric values.
+
+STORY: CSAT and CES post-resolution surveys
+Description: When a ticket is marked resolved, automatically trigger a CSAT/CES feedback survey through the customer’s preferred communication channel.
+
+TASK: Define survey and response model
+Description: Store survey invitations, channel, delivery state, questions, responses, consent, and ticket association with privacy controls.
+
+TASK: Trigger surveys after resolution
+Description: Publish an idempotent resolution event that sends the appropriate survey through the preferred channel and handles delivery failures.
+
+TASK: Add feedback reporting
+Description: Aggregate CSAT and CES results by time, channel, queue, and agent while protecting personally identifiable information.
+
+STORY: Speech and text analytics for systemic issues
+Description: Evaluate historical and incoming customer communications across channels to identify sentiment trends, emerging pain points, and systemic product bugs proactively.
+
+TASK: Build cross-channel analytics pipeline
+Description: Normalize text and managed speech-to-text outputs, apply sentiment and topic analysis, and retain model metadata.
+
+TASK: Detect emerging issues
+Description: Identify statistically meaningful sentiment, topic, volume, and escalation changes and create explainable issue signals.
+
+TASK: Add proactive insight dashboard and alerts
+Description: Display trends, affected categories, supporting interactions, confidence, and configurable administrator notifications.
+
+EPIC: Platform Reliability, Security, Privacy, and Compliance
+Description: Meet performance, availability, residency, privacy, security, localization, retention, and observability requirements for a cloud-native global support platform.
+
+STORY: Performance and availability targets
+Description: Standard UI and ticket CRUD operations must remain below 200 ms at the 95th percentile, search and knowledge suggestions below 150 ms, AI triage and smart reply below 1,500 ms, with support for 500 RPS normally and 2,000 RPS during surges; availability must be 99.9% with no more than 8.76 hours of unplanned downtime per year.
+
+TASK: Establish performance budgets and load tests
+Description: Add p95 latency and throughput test scenarios for CRUD, search, knowledge suggestions, and AI operations at normal and surge loads.
+
+TASK: Implement scaling and resilience controls
+Description: Configure horizontal scaling, queues, timeouts, circuit breakers, caching, rate limits, and graceful degradation for dependent services.
+
+TASK: Publish availability monitoring and SLA reporting
+Description: Track uptime, downtime, scheduled maintenance, error budgets, and SLA compliance with operational reports.
+
+STORY: Data residency and privacy compliance
+Description: Support GDPR and CCPA rights including access, export, deletion, and anonymization, and store or process customer support data in approved regional boundaries such as EU-Central and US-East.
+
+TASK: Implement regional data placement
+Description: Add tenant and customer region metadata, region-aware storage and processing routing, and controls preventing unauthorized cross-region transfer.
+
+TASK: Implement privacy rights workflows
+Description: Provide authenticated data export, right-to-be-forgotten, deletion verification, anonymization, and completion audit records.
+
+TASK: Add privacy governance controls
+Description: Document consent, processor boundaries, data inventory, access reviews, and CCPA/GDPR compliance evidence.
+
+STORY: AI service reliability and fallback
+Description: Deliver 95% of AI responses within 2 seconds, target 99.5% AI endpoint uptime, and automatically use rule-based triage or static responses when an AI provider is unavailable.
+
+TASK: Add AI timeout and circuit-breaker policy
+Description: Enforce latency budgets, detect provider outages, stop repeated failing calls, and record provider health metrics.
+
+TASK: Implement AI fallback paths
+Description: Provide deterministic rule-based triage and safe static responses for each AI-dependent customer and agent workflow.
+
+TASK: Monitor AI service SLA
+Description: Track response latency distribution, uptime, failure rate, token consumption, fallback rate, and provider-specific alerts.
+
+STORY: Global localization and regional deployment
+Description: Support global deployment with primary North America US-East/US-West and Europe EU-Central clusters and launch UI and NLP support for English, Spanish, French, German, and Japanese.
+
+TASK: Add localization framework
+Description: Externalize UI strings, dates, times, numbers, survey content, and accessibility text for the five launch languages.
+
+TASK: Add multilingual NLP evaluation
+Description: Test sentiment, intent, summarization, and deflection quality for English, Spanish, French, German, and Japanese.
+
+TASK: Define multi-region deployment topology
+Description: Document routing, failover, configuration, monitoring, and data boundaries for US-East, US-West, and EU-Central clusters.
+
+STORY: Data retention and lifecycle management
+Description: Retain operational logs for 90 active days and archive them for up to one year, retain PII while accounts are active and scrub or anonymize it within 30 days of deletion requests, and retain AI outputs and interaction history for 180 days unless policy requires earlier purging.
+
+TASK: Configure retention schedules
+Description: Implement automated retention, archival, deletion, anonymization, and legal-hold controls for logs, PII, AI outputs, and interaction history.
+
+TASK: Add lifecycle verification reports
+Description: Report records due for action, completed actions, exceptions, and failures with auditable timestamps.
+
+TASK: Protect retained and archived data
+Description: Apply access controls, encryption, secure deletion, backup lifecycle rules, and restoration procedures across active and archived data.
+
+STORY: Mandatory security controls
+Description: Enforce TLS 1.3 in transit, AES-256 at rest, OAuth 2.0 or OIDC authentication, MFA for agents and administrators, RBAC, annual independent penetration testing, continuous vulnerability scanning, and dependency audits.
+
+TASK: Implement identity and access management
+Description: Integrate OAuth 2.0/OIDC, enforce MFA for privileged users, define RBAC permissions, and support session revocation and access review.
+
+TASK: Implement encryption and key management
+Description: Configure TLS 1.3 for APIs and internal services, AES-256 for databases, attachments, and archived logs, and managed key rotation.
+
+TASK: Establish security testing program
+Description: Automate dependency and vulnerability scans, track remediation, and schedule annual independent penetration testing with evidence retention.
+
+STORY: Observability and critical alerting
+Description: Provide centralized OpenTelemetry-compliant structured JSON logs with request IDs, user context, and error stacks; track infrastructure, API, and AI metrics; and alert PagerDuty for P1 outages.
+
+TASK: Implement structured logging and tracing
+Description: Emit correlated JSON logs and distributed traces with request IDs, authorized user context, service metadata, and safe error details.
+
+TASK: Publish operational metrics
+Description: Export CPU, memory, HTTP 4xx/5xx, AI token, latency, and failure metrics for Prometheus/Grafana dashboards.
+
+TASK: Configure PagerDuty alerting
+Description: Define P1 alerts for database unavailability, webhook gateway failure, authentication outage, and other critical service conditions with deduplication and escalation.
+
+STORY: Cloud-native deployment assumptions and boundaries
+Description: Deploy as a cloud-native SaaS platform, rely on customer-provided credentials for external integrations, use managed speech-to-text services where needed, and exclude custom hardware deployment.
+
+TASK: Define external integration configuration
+Description: Document secure environment configuration, secret rotation, tenant-specific API keys, and connectivity checks for WhatsApp, Slack, Microsoft Teams, and other providers.
+
+TASK: Document managed speech service boundary
+Description: Define the adapter contract, privacy controls, failure behavior, and retention handling for AWS Transcribe, OpenAI Whisper, or an equivalent managed service.
+
+TASK: Document out-of-scope deployment constraints
+Description: Record that custom hardware deployment and hosting voice-to-text hardware are excluded from the platform scope.
